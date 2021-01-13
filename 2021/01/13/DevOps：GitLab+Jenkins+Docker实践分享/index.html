@@ -1,0 +1,78 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><title>  · JevonYang的博客</title><meta name="description" content=" - JevonYang"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="/favicon.png"><link rel="stylesheet" href="/css/apollo.css"><link rel="search" type="application/opensearchdescription+xml" href="https://jevonyang.github.io/atom.xml" title="JevonYang的博客"><meta name="generator" content="Hexo 5.3.0"><link rel="alternate" href="/atom.xml" title="JevonYang的博客" type="application/atom+xml">
+</head><body><div class="wrap"><header><a href="/" class="logo-link"><img src="/favicon.png" alt="logo"></a><ul class="nav nav-list"><li class="nav-list-item"><a href="/" target="_self" class="nav-list-link">BLOG</a></li><li class="nav-list-item"><a href="/archives/" target="_self" class="nav-list-link">ARCHIVE</a></li><li class="nav-list-item"><a href="https://github.com/JevonYang" target="_blank" class="nav-list-link">GITHUB</a></li><li class="nav-list-item"><a href="/atom.xml" target="_self" class="nav-list-link">RSS</a></li></ul></header><main class="container"><div class="post"><article class="post-block"><h1 class="post-title"></h1><div class="post-info">Jan 13, 2021</div><div class="post-content"><blockquote>
+<p>相信很多小团队仍然在使用SVN+手动发版的这样的方法，当代码量不断膨胀、开发人员不断上升，在管理上会愈发吃力。最近，领导说，小杨啊，我们要提升开发效率。于是，选择了Gitlab+Jenkins的主流工具，过程中遇到很多坑，希望和大家分享。</p>
+</blockquote>
+<p><img src="https://static.oschina.net/uploads/img/201709/26120628_Jt5S.jpg" alt="持续集成示意图" title="持续集成示意图"></p>
+<h1 id="GitLab"><a href="#GitLab" class="headerlink" title="GitLab"></a>GitLab</h1><blockquote>
+<p><a target="_blank" rel="noopener" href="https://about.gitlab.com/">GitLab</a>简单的说就是自建版的Github，可以安装到自己的服务器上，主要功能代码管理、权限管理、代码可视化、需求管理。</p>
+</blockquote>
+<p>Server: Ubuntu 14.04</p>
+<p>GitLab:10.0.1</p>
+<h2 id="安装配置"><a href="#安装配置" class="headerlink" title="安装配置"></a>安装配置</h2><ol>
+<li>GitLab安装依赖包<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install curl openssh-server ca-certificates postfix</span><br></pre></td></tr></table></figure></li>
+<li>首先信任 GitLab 的 GPG 公钥:</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl https:&#x2F;&#x2F;packages.gitlab.com&#x2F;gpg.key 2&gt; &#x2F;dev&#x2F;null | sudo apt-key add - &amp;&gt;&#x2F;dev&#x2F;null</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>修改或新建<code>/etc/apt/sources.list.d/gitlab-ce.list</code>加入清华的gitlab源，因为官方源实在是太慢了</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">deb https:&#x2F;&#x2F;mirrors.tuna.tsinghua.edu.cn&#x2F;gitlab-ce&#x2F;ubuntu trusty main</span><br></pre></td></tr></table></figure>
+<ol start="4">
+<li>安装 gitlab-ce:</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get update</span><br><span class="line">sudo apt-get install gitlab-ce</span><br></pre></td></tr></table></figure>
+<ol start="5">
+<li>安装完成后，修改<code>/etc/gitlab/gitlab.rb</code>文件（有的文章说改别的地方，不推荐，Ubuntu 14.04改这里就行），将gitlab.example.com换为当前服务器的ip，例如192.168.1.1。</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">external_url &#39;http:&#x2F;&#x2F;gitlab.example.com&#39;</span><br></pre></td></tr></table></figure>
+
+<ol start="6">
+<li>接着就重新配置gitlab，然后重启GitLab服务：</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo gitlab-ctl reconfigure#重新配置</span><br><span class="line">sudo gitlab-ctl restart#重新启动gitlab服务</span><br></pre></td></tr></table></figure>
+<ul>
+<li>服务重启完成后，在浏览器中输入服务器ip，不用加端口号，即可进入GitLab的界面，GitLab和Github功能大致一致。至于不会git操作的用户，请移步<a target="_blank" rel="noopener" href="https://my.oschina.net/yangzijing/blog/1476531">Git简明教程</a></li>
+</ul>
+<h2 id="报错处理"><a href="#报错处理" class="headerlink" title="报错处理"></a>报错处理</h2><ul>
+<li>在浏览器输入地址后，出现502：重新配置然后重启，一般来说gitlab启动需要一段时间，稍等即可。</li>
+<li>在浏览器输入地址后，出现nginx、apache2或者别的：关闭相关服务，后重启gitlab。</li>
+</ul>
+<h1 id="Docker"><a href="#Docker" class="headerlink" title="Docker"></a>Docker</h1><p>Docker: 17.0</p>
+<p>Docker的安装方法便不再赘述，官方教程很详细，简单明了。</p>
+<p>Docker官方安装教程：<a target="_blank" rel="noopener" href="https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/">Ubuntu</a> <a target="_blank" rel="noopener" href="https://docs.docker.com/engine/installation/linux/docker-ce/centos/">CentOS</a><br> <a target="_blank" rel="noopener" href="https://docs.docker.com/compose/install/#install-compose">Docker-Compose</a></p>
+<p>顺便再推荐<a target="_blank" rel="noopener" href="https://docs.docker.com/get-started/">Docker官方教程</a>，以及<a target="_blank" rel="noopener" href="https://hub.docker.com/">Docker官方镜像仓库</a>几乎所有工具的镜像在这里都可以找到。不出几年，我们将抛开所有繁杂的安装过程，拥抱docker镜像。</p>
+<p>重点说一下的几个配置，在网上有很多教程、回答，在17版本中都已经失效。总体来说，目前版本（17.0.x）的docker的设置都配置化，不用再在docker的执行脚本中修改。</p>
+<h2 id="访问远程Docker"><a href="#访问远程Docker" class="headerlink" title="访问远程Docker"></a>访问远程Docker</h2><p>被访问服务器中修改<code>/etc/default/docker</code>文件添加：0.0.0.0代表任何ip都可以访问，当然需要限制访问ip可以在这里设置。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DOCKER_OPTS&#x3D;&quot;-H tcp:&#x2F;&#x2F;0.0.0.0:2375 -H unix:&#x2F;&#x2F;&#x2F;var&#x2F;run&#x2F;docker.sock&quot;</span><br></pre></td></tr></table></figure>
+<h2 id="私有仓库"><a href="#私有仓库" class="headerlink" title="私有仓库"></a>私有仓库</h2><p>私有仓库是很有用的功能，简单几条命令即可创建私有仓库，同时，将自己的镜像上传到私有仓库，既保障的镜像安全，也为镜像备份。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker pull registry</span><br><span class="line">docker run -d -p 5000:5000 registry</span><br></pre></td></tr></table></figure>
+<p>私有仓库开启后，push或者pull的时候会报链接错误。此时需要修改<code>/etc/docker/daemon.json</code>文件即可，如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;registry-mirrors&quot;: [&quot;https:&#x2F;&#x2F;registry.docker-cn.com&quot;],</span><br><span class="line">  &quot;insecure-registries&quot;:[&quot;x.x.x.x:5000&quot;]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在Stackoverflow上很多回答说修改<code>/etc/init.d/docker</code>或 <code>/etc/sysconfig/docker</code>抑或其他，在当前版本都是行不通。</p>
+<h2 id="Docker代理"><a href="#Docker代理" class="headerlink" title="Docker代理"></a>Docker代理</h2><p>某些地方的服务器不能连外网，此时需要代理。创建<code>/etc/systemd/system/docker.service.d/http-proxy.conf</code>文件，添加以下内容：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[Service]</span><br><span class="line">Environment&#x3D;&quot;HTTP_PROXY&#x3D;http:&#x2F;&#x2F;proxy.example.com:80&#x2F;&quot;</span><br></pre></td></tr></table></figure>
+<p>若果需要https代理创建https-proxy.conf文件并做相应修改即可。接着重新载入Docker配置，重启服务，代理生效。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl daemon-reload</span><br></pre></td></tr></table></figure>
+<h1 id="Jenkins"><a href="#Jenkins" class="headerlink" title="Jenkins"></a>Jenkins</h1><p>Server: CentOS 7.2</p>
+<p>Jenkins:2.7.9</p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><ol>
+<li>首先添加yum源，然后使用yum安装，Jenkins本质上是一个war包，一定要注意在此之前需要安装Java。<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo wget -O &#x2F;etc&#x2F;yum.repos.d&#x2F;jenkins.repo http:&#x2F;&#x2F;pkg.jenkins-ci.org&#x2F;RedHat&#x2F;jenkins.repo</span><br><span class="line">sudo rpm --import https:&#x2F;&#x2F;jenkins-ci.org&#x2F;redhat&#x2F;jenkins-ci.org.key</span><br><span class="line">sudo yum install jenkins</span><br></pre></td></tr></table></figure></li>
+<li>接下来配置<code>/etc/sysconfig/jenkins</code>文件，最重要的两条，一条是当前机器Java的路径；以及Jenkins的端口号，默认为8080，如果已被占用可以更换。<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">JENKINS_JAVA_CMD&#x3D;&quot;&#x2F;usr&#x2F;local&#x2F;java&#x2F;jdk1.8&#x2F;bin&#x2F;java&quot;</span><br><span class="line">JENKINS_PORT&#x3D;&quot;8080&quot;</span><br></pre></td></tr></table></figure>
+Jenkins服务重启<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo service jenkins start&#x2F;stop&#x2F;restart</span><br><span class="line">sudo chkconfig jenkins on</span><br></pre></td></tr></table></figure></li>
+<li>之后便可以在浏览器输入服务器ip:8080，看到Jenkins的页面。按照提示<code>/var/lib/jenkins/secrets/initalAdminPassword</code>文件中找到管理员密码，然后一路next即可，进入Jenkins界面。</li>
+</ol>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><ol>
+<li><p>系统管理-&gt;Global Tool Configuration分别设置JDK、Git、Maven、Docker，其中name都是随便填的，路径填入相应软件的路径，值得注意的是有的只需要精确到所在文件，有的则需要精确到执行文件。当然，如果填的不对，会有黄字或红字提示。</p>
+</li>
+<li><p>系统管理-&gt;系统设置 中需要配置Maven项目配置和Docker Builder（需要装插件）。</p>
+</li>
+</ol>
+<p>Maven中Local Maven Repository选择default即可，但是在Maven软件中，需要修改maven(你的maven路径)/conf/setting.xml中的修改<code>local repository</code>标签，例如以下地址。因为权限问题，如果把本地仓库放入root目录下，会报错。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;localRepository&gt;&#x2F;var&#x2F;.m2&#x2F;repository&lt;&#x2F;localRepository&gt;</span><br></pre></td></tr></table></figure>
+<p>Docker Builder设置。首先安装Docker Builder插件，设置Docker URL为以下二选一。本地docker可以选择以下两种的任意一种。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">unix:&#x2F;&#x2F;&#x2F;var&#x2F;run&#x2F;docker.sock#连接本地docker</span><br><span class="line">tcp:&#x2F;&#x2F;xxx.x.xx.xx:2375#连接远程docker</span><br></pre></td></tr></table></figure>
+<p>点Test Connection验证链接是否正确。连接远程出错请参看本文“访问远程Docker”这一小节，本地出现错误请修改Jenkins所在服务器中<code>/var/run/docker.sock</code>权限，最简单粗暴的是<code>chmod 777 /var/run/docker.sock</code>。</p>
+<h2 id="控制Docker"><a href="#控制Docker" class="headerlink" title="控制Docker"></a>控制Docker</h2><p>控制Docker流程可以用脚本，也可以用Execute Docker Command插件，在设置好Docker Builder后，很容易设置Execute Docker Command，下面用脚本演示。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">docker stop $(docker ps -aq --filter&#x3D;&#39;name&#x3D;yang&#39; | paste -sd &quot;|&quot; -) #停止名为yang的容器</span><br><span class="line">docker rm $(docker ps -aq --filter&#x3D;&#39;name&#x3D;yang&#39; | paste -sd &quot;|&quot; -) #删除名为yang的容器</span><br><span class="line">docker build -t oppdocker:$BUILD_NUMBER .  #创建相应镜像，注意后面有个.</span><br><span class="line">docker create --name yang-p 4000:8080 yangdocker:$BUILD_NUMBER #创建容器</span><br><span class="line">docker tag yangdocker:$BUILD_NUMBER 10.0.210.148:5000&#x2F;yangdocker:$BUILD_NUMBER #标记容器</span><br><span class="line">docker push 10.0.210.148:5000&#x2F;yangdocker:$BUILD_NUMBER #标记容器到远程仓库</span><br><span class="line">docker start yang #启动容器</span><br></pre></td></tr></table></figure>
+<h2 id="Pepeline"><a href="#Pepeline" class="headerlink" title="Pepeline"></a>Pepeline</h2><p>Pepeline事实上Groovy脚本，先放放，稍后写</p>
+</div></article></div></main><footer><div class="paginator"><a href="/2021/01/13/Git%E7%AE%80%E6%98%8E%E6%95%99%E7%A8%8B/" class="prev">PREV</a><a href="/2021/01/13/hello-world/" class="next">NEXT</a></div><div class="copyright"><p>© 2015 - 2021 <a href="https://jevonyang.github.io">JevonYang</a>, powered by <a href="https://hexo.io/" target="_blank">Hexo</a> and <a href="https://github.com/pinggod/hexo-theme-apollo" target="_blank">hexo-theme-apollo</a>.</p></div></footer></div><script async src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML" integrity="sha384-crwIf/BuaWM9rM65iM+dWFldgQ1Un8jWZMuh3puxb8TOY9+linwLoI7ZHZT+aekW" crossorigin="anonymous"></script></body></html>
