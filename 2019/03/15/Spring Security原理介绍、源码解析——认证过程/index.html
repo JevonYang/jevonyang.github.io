@@ -1,37 +1,611 @@
-{% extends '_layout.swig' %}
-{% import '_macro/post.swig' as post_template %}
-{% import '_macro/sidebar.swig' as sidebar_template %}
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>Spring Security原理介绍、源码解析——认证过程 | JevonYang&#39;s blog</title>
+  <meta name="description" content="核心原理在前后端分离的架构中，权限认证主要包含两个主要的过程：  通过用户名密码换取一个令牌（Token），令牌具有不可修改性，以保证权限的安全。 用户在之后一段时间访问则不用再输入用户名密码，通过Token则可以访问被权限管理限制的接口。  再进一步说，  流程1，是通过用户名密码，从数据库中拿到用户的信息、权限等，并转换成安全框架（这里就是Spring Security）中可识别的身份信息（即">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring Security原理介绍、源码解析——认证过程">
+<meta property="og:url" content="https://jevonyang.github.io/2019/03/15/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E8%AE%A4%E8%AF%81%E8%BF%87%E7%A8%8B/index.html">
+<meta property="og:site_name" content="JevonYang的博客">
+<meta property="og:description" content="核心原理在前后端分离的架构中，权限认证主要包含两个主要的过程：  通过用户名密码换取一个令牌（Token），令牌具有不可修改性，以保证权限的安全。 用户在之后一段时间访问则不用再输入用户名密码，通过Token则可以访问被权限管理限制的接口。  再进一步说，  流程1，是通过用户名密码，从数据库中拿到用户的信息、权限等，并转换成安全框架（这里就是Spring Security）中可识别的身份信息（即">
+<meta property="og:locale">
+<meta property="article:published_time" content="2019-03-15T07:13:58.000Z">
+<meta property="article:modified_time" content="2021-01-24T07:20:48.843Z">
+<meta property="article:author" content="JevonYang">
+<meta property="article:tag" content="spring security">
+<meta name="twitter:card" content="summary">
+  <!-- Canonical links -->
+  <link rel="canonical" href="https://jevonyang.github.io/2019/03/15/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E8%AE%A4%E8%AF%81%E8%BF%87%E7%A8%8B/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="JevonYang的博客" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.3.0"></head>
 
 
-{% block title %}{{ page.title }} | {{ config.title }}{% endblock %}
+<body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/JevonYang" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">JevonYang</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">Data Analyst</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> 中国北京</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
 
-{% block page_class %}page-post-detail{% endblock %}
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="Search" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="Type something..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
 
 
-{% block content %}
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">Home</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">Archives</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">Categories</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">Tags</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">Repository</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">Books</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">Links</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">About</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/JevonYang" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="http://weibo.com/theendy" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
 
-  <div id="posts" class="posts-expand">
-    {{ post_template.render(page) }}
+    </nav>
+  </div>
+</header>
 
-    <div class="post-spread">
-      {% if theme.jiathis %}
-        {% include '_partials/share/jiathis.swig' %}
-      {% elseif theme.baidushare %}
-        {% include '_partials/share/baidushare.swig' %}
-      {% elseif theme.add_this_id %}
-        {% include '_partials/share/add-this.swig' %}
-      {% elseif theme.duoshuo_shortname and theme.duoshuo_share %}
-        {% include '_partials/share/duoshuo_share.swig' %}
-      {% endif %}
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">Board</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/callback/" rel="tag">callback</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/devops/" rel="tag">devops</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/" rel="tag">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/" rel="tag">java</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/reactive-spring-webflux/" rel="tag">reactive, spring webflux</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spring-cloud/" rel="tag">spring cloud</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spring-security/" rel="tag">spring security</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" rel="tag">大数据</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
-{% endblock %}
 
-{% block sidebar %}
-  {{ sidebar_template.render(true) }}
-{% endblock %}
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/callback/" style="font-size: 13px;">callback</a> <a href="/tags/devops/" style="font-size: 13px;">devops</a> <a href="/tags/git/" style="font-size: 13px;">git</a> <a href="/tags/java/" style="font-size: 13px;">java</a> <a href="/tags/reactive-spring-webflux/" style="font-size: 13px;">reactive, spring webflux</a> <a href="/tags/spring-cloud/" style="font-size: 14px;">spring cloud</a> <a href="/tags/spring-security/" style="font-size: 13.5px;">spring security</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 13px;">大数据</a>
+    </div>
+  </div>
 
-{% block script_extra %}
-  {% include '_scripts/pages/post-details.swig' %}
-{% endblock %}
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Archive</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/01/">January 2021</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/09/">September 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/04/">April 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/03/">March 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/07/">July 2017</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2021/01/23/Flink%E9%83%A8%E7%BD%B2%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/" class="title">Flink部署简单介绍</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2021-01-23T11:09:54.000Z" itemprop="datePublished">2021-01-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2020/09/21/%5BReactive%5D%E5%9C%A8SpringWebFlux%E4%BD%BF%E7%94%A8%E7%BC%93%E5%AD%98/" class="title">在SpringWebFlux使用缓存</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2020-09-21T07:37:58.000Z" itemprop="datePublished">2020-09-21</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2019/09/20/Java%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%9B%9E%E8%B0%83%E5%9C%B0%E7%8B%B1%EF%BC%88Callback%20Hell%EF%BC%89%EF%BC%9F/" class="title">Java如何实现一个回调地狱（Callback Hell）？</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2019-09-20T09:58:58.000Z" itemprop="datePublished">2019-09-20</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2019/08/28/Java8%E9%81%8D%E5%8E%86Map%E7%9A%84%E4%B8%89%E7%A7%8D%E6%96%B9%E5%BC%8F%E2%80%94%E2%80%94for-stream-forEach/" class="title">Java8遍历Map的三种方式——for/stream/forEach</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2019-08-28T06:22:58.000Z" itemprop="datePublished">2019-08-28</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2019/04/17/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E6%8E%88%E6%9D%83%E8%BF%87%E7%A8%8B/" class="title">Spring Security原理介绍、源码解析——授权过程</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2019-04-17T07:05:58.000Z" itemprop="datePublished">2019-04-17</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-Spring Security原理介绍、源码解析——认证过程" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Spring Security原理介绍、源码解析——认证过程
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2019/03/15/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E8%AE%A4%E8%AF%81%E8%BF%87%E7%A8%8B/" class="article-date">
+	  <time datetime="2019-03-15T07:13:58.000Z" itemprop="datePublished">2019-03-15</time>
+	</a>
+</span>
+        
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/spring-security/" rel="tag">spring security</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2019/03/15/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E8%AE%A4%E8%AF%81%E8%BF%87%E7%A8%8B/#comments" class="article-comment-link">Comments</a></span>
+        
+	
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">Word Count: 2.1k(words)</span>
+	
+	
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">Read Count: 8(minutes)</span>
+	
+
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h1 id="核心原理"><a href="#核心原理" class="headerlink" title="核心原理"></a>核心原理</h1><p>在前后端分离的架构中，权限认证主要包含两个主要的过程：</p>
+<ol>
+<li>通过用户名密码换取一个令牌（Token），令牌具有不可修改性，以保证权限的安全。</li>
+<li>用户在之后一段时间访问则不用再输入用户名密码，通过Token则可以访问被权限管理限制的接口。</li>
+</ol>
+<p>再进一步说，</p>
+<ol>
+<li>流程1，是通过用户名密码，从数据库中拿到用户的信息、权限等，并转换成安全框架（这里就是Spring Security）中可识别的身份信息（即Authentication），即视为登录成功，之后将必要的些信息转化为之后一段时间访问的凭证——Token。</li>
+<li>流程2，则是将Token解析出来，转成安全框架中可识别身份信息，通过可识别的身份信息，框架再去判断该权限是否可以访问该端点。</li>
+</ol>
+<p>可以看到在流程1&amp;2中，前半部分是相同的，都是将凭证（前者为用户名密码，后者为token）转为框架可识别的身份信息，这一步我们视为<code>认证</code>流程。后半部分则为，各自认证成功的操作逻辑。流程1生成token较为简单，流程2的后半部分则是安全框架（Spring Security）中权限管理的决策逻辑，即决定是否可以访问的逻辑，这一步我们视为<code>授权</code>流程。</p>
+<p>下面将从<code>认证</code>和<code>授权</code>两部分来讲。</p>
+<h1 id="认证"><a href="#认证" class="headerlink" title="认证"></a>认证</h1><h2 id="SecurityFilterChain-过滤器链"><a href="#SecurityFilterChain-过滤器链" class="headerlink" title="SecurityFilterChain 过滤器链"></a>SecurityFilterChain 过滤器链</h2><p>Spring Security采用的是filterChain的设计方式，主要的功能大都由过滤器实现，在启动项目的时候，可以在日志中看到已有的过滤器，可在类似下面的日志里找到<code>DefaultSecurityFilterChain</code>，这里面则是SecurityFilterChain</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2019-03-14 16:43:02.369  INFO 27251 --- [  restartedMain] o.s.s.web.DefaultSecurityFilterChain     : Creating filter chain: org.springframework.security.web.util.matcher.AnyRequestMatcher@1, [org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@1d88a93d, org.springframework.security.web.context.SecurityContextPersistenceFilter@184d52d7, org.springframework.security.web.header.HeaderWriterFilter@29d86b1e, org.springframework.security.web.authentication.logout.LogoutFilter@2ce28138, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter@320a4f73, com.yang.security.config.JwtAuthorizationTokenFilter@37e7a410, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@534e475b, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@39137df7, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@7c42403f, org.springframework.security.web.session.SessionManagementFilter@1fa2ad2b, org.springframework.security.web.access.ExceptionTranslationFilter@65869e97, org.springframework.security.web.access.intercept.FilterSecurityInterceptor@163d3c44]</span><br></pre></td></tr></table></figure>
+<p>把各个过滤器抽取出来，我们可以看到是这样，这也是过滤器链的先后顺序。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">1. WebAsyncManagerIntegrationFilter</span><br><span class="line">2. SecurityContextPersistenceFilter</span><br><span class="line">3. HeaderWriterFilter</span><br><span class="line">4. LogoutFilter</span><br><span class="line">5. **UsernamePasswordAuthenticationFilter**</span><br><span class="line">6. **JwtAuthorizationTokenFilter**</span><br><span class="line">7. RequestCacheAwareFilter</span><br><span class="line">8. SecurityContextHolderAwareRequestFilter</span><br><span class="line">9. SessionManagementFilter</span><br><span class="line">10. ExceptionTranslationFilter</span><br><span class="line">11. FilterSecurityInterceptor</span><br></pre></td></tr></table></figure>
+<p>这里主要讲一下<code>UsernamePasswordAuthenticationFilter</code>及相关的代码，顺带的说一下，我们自己实现<code>JwtAuthenticationFilter</code>及周边。</p>
+<h2 id="示例：-官方的Filter——UsernamePasswordAuthenticationFilter过程"><a href="#示例：-官方的Filter——UsernamePasswordAuthenticationFilter过程" class="headerlink" title="示例： 官方的Filter——UsernamePasswordAuthenticationFilter过程"></a>示例： 官方的Filter——UsernamePasswordAuthenticationFilter过程</h2><h3 id="UsernamePasswordAuthenticationFilter"><a href="#UsernamePasswordAuthenticationFilter" class="headerlink" title="UsernamePasswordAuthenticationFilter"></a>UsernamePasswordAuthenticationFilter</h3><p><code>UsernamePasswordAuthenticationFilter</code>，顾名思义，是用来处理用户名密码登录的过滤器。所有的Filter核心方法都是<code>doFilter</code>，该过滤器的doFilter在其父抽象类中，过滤器只需实现<code>attemptAuthentication</code>方法即可。</p>
+<p>源码摘录如下（并不是完整的源码，拣选重要部分阐述逻辑）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UsernamePasswordAuthenticationFilter</span> <span class="keyword">extends</span> <span class="title">AbstractAuthenticationProcessingFilter</span> </span>&#123;</span><br><span class="line">  </span><br><span class="line">  <span class="function"><span class="keyword">public</span> Authentication <span class="title">attemptAuthentication</span><span class="params">(HttpServletRequest request,</span></span></span><br><span class="line"><span class="function"><span class="params">			HttpServletResponse response)</span> <span class="keyword">throws</span> AuthenticationException </span>&#123;</span><br><span class="line"></span><br><span class="line">	String username = obtainUsername(request);</span><br><span class="line">	String password = obtainPassword(request);</span><br><span class="line">	</span><br><span class="line">	<span class="comment">// 根据用户名密码构造AuthenticationToken</span></span><br><span class="line">	UsernamePasswordAuthenticationToken authRequest = <span class="keyword">new</span> UsernamePasswordAuthenticationToken(</span><br><span class="line">				username, password); </span><br><span class="line">	</span><br><span class="line">    <span class="comment">// 将AuthenticationToken放入AuthenticationProvider进行认证</span></span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">this</span>.getAuthenticationManager().authenticate(authRequest); </span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="AuthenticationManager"><a href="#AuthenticationManager" class="headerlink" title="AuthenticationManager"></a>AuthenticationManager</h3><p><code>AuthenticationManager</code>中维护着一个<code>List&lt;AuthenticationProvider&gt;</code>；首先通过<code>AuthenticationProvider</code>的<code>supports</code>方法检测是否支持该类型的<code>AuthenticationToken</code>；如果支持，则使用<code>authenticate</code>认证，认证通过则将<code>AuthenticationToken</code>转换成经认证的<code>Authentication</code>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ProviderManager</span> <span class="keyword">implements</span> <span class="title">AuthenticationManager</span>, <span class="title">MessageSourceAware</span>,</span></span><br><span class="line"><span class="class">		<span class="title">InitializingBean</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> List&lt;AuthenticationProvider&gt; providers = Collections.emptyList();</span><br><span class="line">	<span class="keyword">private</span> AuthenticationManager parent;</span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">boolean</span> eraseCredentialsAfterAuthentication = <span class="keyword">true</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 遍历Providers</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> Authentication <span class="title">authenticate</span><span class="params">(Authentication authentication)</span></span></span><br><span class="line"><span class="function">			<span class="keyword">throws</span> AuthenticationException </span>&#123;</span><br><span class="line">		</span><br><span class="line">        </span><br><span class="line">		<span class="keyword">for</span> (AuthenticationProvider provider : getProviders()) &#123;</span><br><span class="line">		    <span class="comment">// 如果Authentication不符合，跳过后边步骤，继续循环</span></span><br><span class="line">			<span class="keyword">if</span> (!provider.supports(toTest)) &#123;</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 如果Authentication符合，则使用该Provider进行authenticate操作</span></span><br><span class="line">			result = provider.authenticate(authentication);</span><br><span class="line">            </span><br><span class="line">			<span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">                copyDetails(authentication, result);</span><br><span class="line">            	<span class="keyword">break</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">			<span class="keyword">if</span> (eraseCredentialsAfterAuthentication</span><br><span class="line">					&amp;&amp; (result <span class="keyword">instanceof</span> CredentialsContainer)) &#123;</span><br><span class="line">				((CredentialsContainer) result).eraseCredentials();</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">return</span> result;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="DaoAuthenticationProvider"><a href="#DaoAuthenticationProvider" class="headerlink" title="DaoAuthenticationProvider"></a>DaoAuthenticationProvider</h3><p>接下来，说如何将<code>AuthenticationToken</code>认证。下面是<code>DaoAuthenticationProvider</code>的父抽象类，父类中核心方法就是<code>authenticate</code>方法，而子类则只用实现<code>retrieveUser</code>方法，该方法调用<code>UserDetailsService</code>的<code>loadUserByUsername</code>。对于我们用户而言，所要做的就是实现<code>UserDetailsService</code>，重写其中的方法，通过<code>loadUserByUsername</code>从数据库中拿到用户名和密码，至于后面的验证，事实上都是由<code>AbstractUserDetailsAuthenticationProvider</code>已经做好了。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractUserDetailsAuthenticationProvider</span> <span class="keyword">implements</span></span></span><br><span class="line"><span class="class">		<span class="title">AuthenticationProvider</span>, <span class="title">InitializingBean</span>, <span class="title">MessageSourceAware</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> Authentication <span class="title">authenticate</span><span class="params">(Authentication authentication)</span></span></span><br><span class="line"><span class="function">			<span class="keyword">throws</span> AuthenticationException </span>&#123;</span><br><span class="line">	  </span><br><span class="line">		String username = (authentication.getPrincipal() == <span class="keyword">null</span>) ? <span class="string">&quot;NONE_PROVIDED&quot;</span>: authentication.getName();</span><br><span class="line">        </span><br><span class="line">		<span class="comment">// DaoAuthenticationProvider中重载retrieveUser方法，而该方法中的核心方法就是UserDetailsService的loadUserByUsername</span></span><br><span class="line">		user = retrieveUser(username, (UsernamePasswordAuthenticationToken) authentication);</span><br><span class="line">		</span><br><span class="line">		<span class="comment">// preCheck</span></span><br><span class="line">		preAuthenticationChecks.check(user);</span><br><span class="line">		</span><br><span class="line">		additionalAuthenticationChecks(user, (UsernamePasswordAuthenticationToken) authentication);</span><br><span class="line">		</span><br><span class="line">		<span class="comment">// postCheck</span></span><br><span class="line">		postAuthenticationChecks.check(user);</span><br><span class="line">        </span><br><span class="line">		<span class="comment">// 检查成功没有问题，则创建Authentication示例</span></span><br><span class="line">		<span class="keyword">return</span> createSuccessAuthentication(principalToReturn, authentication, user);</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">supports</span><span class="params">(Class&lt;?&gt; authentication)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> (UsernamePasswordAuthenticationToken.class</span><br><span class="line">				.isAssignableFrom(authentication));</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="总结一下"><a href="#总结一下" class="headerlink" title="总结一下"></a>总结一下</h3><ol>
+<li><code>UsernamePasswordAuthenticationFilter.doFilter</code>获取用户名密码,生成<code>UsernamePasswordAuthenticationToken</code>；</li>
+<li>将<code>UsernamePasswordAuthenticationToken</code>交给<code>DaoAuthenticationProvider</code>验证；</li>
+<li><code>DaoAuthenticationProvider</code>通过<code>UserDetailsService.loadUserByUsername</code>中获取用户名、密码、权限以及其他信息，并进行比对；比对成功，则生成<code>Authentication</code>；</li>
+<li><code>UsernamePasswordAuthenticationFilter</code>将<code>Authentication</code>放入<code>SecurityContextHolder</code>，认证成功；</li>
+</ol>
+<p>齐活！</p>
+<h2 id="实践：编写自己的Filter——JwtAuthenticationFilter"><a href="#实践：编写自己的Filter——JwtAuthenticationFilter" class="headerlink" title="实践：编写自己的Filter——JwtAuthenticationFilter"></a>实践：编写自己的Filter——JwtAuthenticationFilter</h2><p>流程2的主要功能，解析Token，转换成Spring Security内部可识别的身份信息Authentication，并放入上下文中，这一步则是通过JwtAuthenticationFilter来完成，其原理与UsernamePasswordAuthenticationFilter并无二致，我们简单来看一下，当做一个小小的实践练习。</p>
+<h3 id="JwtAuthorizationTokenFilter"><a href="#JwtAuthorizationTokenFilter" class="headerlink" title="JwtAuthorizationTokenFilter"></a>JwtAuthorizationTokenFilter</h3><p>首先编写<code>JwtAuthorizationTokenFilter</code>。我们直接扩展了<code>AbstractAuthenticationProcessingFilter</code>这个抽象类,因为想使用其<code>requiresAuthentication</code>方法判断访问端点是否需要经过该过滤器；于此同时我们需要实现一个<code>RequestMatch</code>匹配访问信息，具体实现按下不表，可以参考代码中<code>SkipUrlMatcher</code>实现自己的业务逻辑。</p>
+<p>接下来，我们将获取的<code>access_token</code>解析，转化成<code>UserDetails</code>，代码中Step1中的User即为其具体实现。我们知道，jwt事实上是加密的，只有通过我们自己的秘钥解析才能验证成功，获取内部信息。事实上在这一步骤，我们已经验证了信息的真实性、可用性（Step1），就直接生成<code>JwtAuthenticationToken</code>（Step2），这里的authentication已经经过验证，放入<code>AuthenticationManager.authenticate</code>过程得到框架可识别的认证信息<code>Authentication</code>。将已认证身份信息放入上下文，认证过程完成。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JwtAuthorizationTokenFilter</span> <span class="keyword">extends</span> <span class="title">AbstractAuthenticationProcessingFilter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">JwtAuthorizationTokenFilter</span><span class="params">(RequestMatcher matcher)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>(matcher);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doFilter</span><span class="params">(ServletRequest request, ServletResponse response, FilterChain filterChain)</span> <span class="keyword">throws</span> ServletException, IOException </span>&#123;</span><br><span class="line"></span><br><span class="line">    HttpServletRequest httpServletRequest = (HttpServletRequest) request;</span><br><span class="line">    HttpServletResponse httpServletResponse = (HttpServletResponse) response;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Step0. 首先判断访问的端点是否需要经过该过滤器</span></span><br><span class="line">    <span class="keyword">if</span> (!requiresAuthentication(httpServletRequest, httpServletResponse)) &#123;</span><br><span class="line">      filterChain.doFilter(httpServletRequest, httpServletResponse);</span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    String token = httpServletRequest.getHeader(<span class="string">&quot;Authorization&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Step1. 将token转换成UserDetails(这里的User是自己写的UserDetail的实现)</span></span><br><span class="line">    User user = JwtUtil.accessToken2User(token.substring(<span class="number">7</span>));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Step2. 将UserDetails转换成Authentication，这里的JwtAuthenticationToken即为Authentication的实现，</span></span><br><span class="line">    <span class="comment">// 一般而言，将UserDetails放入Authentication的principle中,之后如果需要可通过Authentication.getPrinciple的方法把UserDetails取出来</span></span><br><span class="line">    JwtAuthenticationToken authenticationToken = <span class="keyword">new</span> JwtAuthenticationToken(user, token, user.getAuthorities());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Step3. 这一步将AuthenticationToken交由AuthenticationProvider处理，转换成Authentication</span></span><br><span class="line">    <span class="keyword">final</span> Authentication authentication = getAuthenticationManager().authenticate(authenticationToken);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Step4. 将得到的Authentication实例放入Holder，则认证完成</span></span><br><span class="line">    SecurityContextHolder.getContext().setAuthentication(authentication);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Step5. 进入之后的过滤器处理</span></span><br><span class="line">    filterChain.doFilter(httpServletRequest, httpServletResponse);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="JwtAuthenticationProvider"><a href="#JwtAuthenticationProvider" class="headerlink" title="JwtAuthenticationProvider"></a>JwtAuthenticationProvider</h3><p>再来看一下自定义的<code>JwtAuthenticationProvider</code>。通过前面的一小节我们知道，<code>AuthenticationManager.authenticate</code>过程实际上是通过具体的<code>AuthenticationProvider</code>完成，我们前面得到了一个<code>JwtAuthenticationToken</code>，我们就专门实现一个处理该实例的<code>AuthenticationProvider</code>。在该实现方法里，<code>authenticate</code>过程我直接将传入的<code>authentication</code>（实例为<code>jwtAuthenticationToken</code>）直接返回，是因为Jwt解析过程需要对JWT进行解密、验证，所以我们传入的<code>JwtAuthenticationToken</code>已经是验证过的，故在这里没做过多的处理。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JwtAuthenticationProvider</span> <span class="keyword">implements</span> <span class="title">AuthenticationProvider</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Authentication <span class="title">authenticate</span><span class="params">(Authentication authentication)</span> <span class="keyword">throws</span> AuthenticationException </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> authentication;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">supports</span><span class="params">(Class&lt;?&gt; authentication)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (JwtAuthenticationToken.class.isAssignableFrom(authentication));</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="总结一下我们干了什么"><a href="#总结一下我们干了什么" class="headerlink" title="总结一下我们干了什么"></a>总结一下我们干了什么</h3><ol>
+<li>实现一个自定义<code>AuthorizationTokenFilter</code>，实现<code>doFilter</code>方法，该方法则是认证的整个过程。</li>
+<li>获取请求信息（这一节获取的信息是JWT，上一节获取的是用户名密码），将这些信息生成一个<code>AuthenticationToken</code>（这一节生成的JwtAuthenticationToken，上一节是UsernamePasswordToken）</li>
+<li>将<code>AuthenticationToken</code>交给<code>AuthenticationProvider</code>验证，在<code>supports</code>方法中验证是否支持该类型的<code>AuthenticationToken</code>，在<code>authenticate</code>方法中完成验证的过程。</li>
+<li>将认证后的<code>Authentication</code>实例放入安全上下文<code>SecurityContextHolder</code>，认证过程全部完成。</li>
+</ol>
+<p>文章涉及到代码已传到gitee上，供大家参考： <a target="_blank" rel="noopener" href="https://gitee.com/yangzijing/spring-security-demo">https://gitee.com/yangzijing/spring-security-demo</a></p>
+<p>Spring Security源码庞大且复杂，本人水平有限，文章难免有错漏、表述不清之处，请大家支出。欢迎交流，希望和大家共同进步。</p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="https://jevonyang.github.io/2019/03/15/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E8%AE%A4%E8%AF%81%E8%BF%87%E7%A8%8B/" title="Spring Security原理介绍、源码解析——认证过程" target="_blank" rel="external">https://jevonyang.github.io/2019/03/15/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E8%AE%A4%E8%AF%81%E8%BF%87%E7%A8%8B/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/JevonYang" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/JevonYang" target="_blank"><span class="text-dark">JevonYang</span><small class="ml-1x">Data Analyst</small></a></h3>
+        <div>Be a better coder!</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2019/04/17/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E6%8E%88%E6%9D%83%E8%BF%87%E7%A8%8B/" title="Spring Security原理介绍、源码解析——授权过程"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;Newer</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2018/06/11/SpringCloud%E5%AE%9E%E8%B7%B5%E5%88%86%E4%BA%AB-%E6%97%A5%E5%BF%97%E6%94%B6%E9%9B%86Kafka-ELK/" title="SpringCloud实践分享-日志收集Kafka-ELK"><span>Older&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/JevonYang" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="http://weibo.com/theendy" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: 'Posts',
+            PAGES: 'Pages',
+            CATEGORIES: 'Categories',
+            TAGS: 'Tags',
+            UNTITLED: '(Untitled)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+    <script>
+(function ($) {
+    $('.search-form').on('submit', function (e) {
+        var keyword = $('.search-form-input[name="wd"]').val();
+        window.location = 'https://www.baidu.com/s?wd=site:jevonyang.github.io ' + keyword;
+        return false;
+    });
+})(jQuery);
+</script>
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,37 +1,587 @@
-{% extends '_layout.swig' %}
-{% import '_macro/post.swig' as post_template %}
-{% import '_macro/sidebar.swig' as sidebar_template %}
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>SpringCloud实践分享-Config配置中心 | JevonYang&#39;s blog</title>
+  <meta name="description" content="简介在服务中经常会遇到一些易变的参数，例如数据库地址、超时时间等等。这些参数与代码关系耦合度低，但是每改一次就去修改代码中的参数，再去编译部署显得很蠢，于是就有了配置中心得个实现。目前用的比较多的配置中心有SpringCloudConfig和携程的Apollo。SpringCloudConfig的好处是和SpringCloud绑定，全家桶（有好处有坏处，你懂的），部署简单；而Apollo部署比较麻">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SpringCloud实践分享-Config配置中心">
+<meta property="og:url" content="https://jevonyang.github.io/2018/06/07/SpringCloud%E5%AE%9E%E8%B7%B5%E5%88%86%E4%BA%AB-Config%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/index.html">
+<meta property="og:site_name" content="JevonYang的博客">
+<meta property="og:description" content="简介在服务中经常会遇到一些易变的参数，例如数据库地址、超时时间等等。这些参数与代码关系耦合度低，但是每改一次就去修改代码中的参数，再去编译部署显得很蠢，于是就有了配置中心得个实现。目前用的比较多的配置中心有SpringCloudConfig和携程的Apollo。SpringCloudConfig的好处是和SpringCloud绑定，全家桶（有好处有坏处，你懂的），部署简单；而Apollo部署比较麻">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-06-07T06:17:58.000Z">
+<meta property="article:modified_time" content="2021-01-24T07:27:21.499Z">
+<meta property="article:author" content="JevonYang">
+<meta property="article:tag" content="spring cloud">
+<meta name="twitter:card" content="summary">
+  <!-- Canonical links -->
+  <link rel="canonical" href="https://jevonyang.github.io/2018/06/07/SpringCloud%E5%AE%9E%E8%B7%B5%E5%88%86%E4%BA%AB-Config%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="JevonYang的博客" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.3.0"></head>
 
 
-{% block title %}{{ page.title }} | {{ config.title }}{% endblock %}
+<body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/JevonYang" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">JevonYang</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">Data Analyst</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> 中国北京</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
 
-{% block page_class %}page-post-detail{% endblock %}
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="Search" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="Type something..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
 
 
-{% block content %}
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">Home</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">Archives</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">Categories</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">Tags</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">Repository</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">Books</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">Links</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">About</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/JevonYang" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="http://weibo.com/theendy" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
 
-  <div id="posts" class="posts-expand">
-    {{ post_template.render(page) }}
+    </nav>
+  </div>
+</header>
 
-    <div class="post-spread">
-      {% if theme.jiathis %}
-        {% include '_partials/share/jiathis.swig' %}
-      {% elseif theme.baidushare %}
-        {% include '_partials/share/baidushare.swig' %}
-      {% elseif theme.add_this_id %}
-        {% include '_partials/share/add-this.swig' %}
-      {% elseif theme.duoshuo_shortname and theme.duoshuo_share %}
-        {% include '_partials/share/duoshuo_share.swig' %}
-      {% endif %}
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">Board</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/callback/" rel="tag">callback</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/devops/" rel="tag">devops</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/" rel="tag">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/" rel="tag">java</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/reactive-spring-webflux/" rel="tag">reactive, spring webflux</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spring-cloud/" rel="tag">spring cloud</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spring-security/" rel="tag">spring security</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" rel="tag">大数据</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
-{% endblock %}
 
-{% block sidebar %}
-  {{ sidebar_template.render(true) }}
-{% endblock %}
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/callback/" style="font-size: 13px;">callback</a> <a href="/tags/devops/" style="font-size: 13px;">devops</a> <a href="/tags/git/" style="font-size: 13px;">git</a> <a href="/tags/java/" style="font-size: 13px;">java</a> <a href="/tags/reactive-spring-webflux/" style="font-size: 13px;">reactive, spring webflux</a> <a href="/tags/spring-cloud/" style="font-size: 14px;">spring cloud</a> <a href="/tags/spring-security/" style="font-size: 13.5px;">spring security</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 13px;">大数据</a>
+    </div>
+  </div>
 
-{% block script_extra %}
-  {% include '_scripts/pages/post-details.swig' %}
-{% endblock %}
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Archive</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/01/">January 2021</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/09/">September 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/04/">April 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/03/">March 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/07/">July 2017</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2021/01/23/Flink%E9%83%A8%E7%BD%B2%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/" class="title">Flink部署简单介绍</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2021-01-23T11:09:54.000Z" itemprop="datePublished">2021-01-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2020/09/21/%5BReactive%5D%E5%9C%A8SpringWebFlux%E4%BD%BF%E7%94%A8%E7%BC%93%E5%AD%98/" class="title">在SpringWebFlux使用缓存</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2020-09-21T07:37:58.000Z" itemprop="datePublished">2020-09-21</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2019/09/20/Java%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%9B%9E%E8%B0%83%E5%9C%B0%E7%8B%B1%EF%BC%88Callback%20Hell%EF%BC%89%EF%BC%9F/" class="title">Java如何实现一个回调地狱（Callback Hell）？</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2019-09-20T09:58:58.000Z" itemprop="datePublished">2019-09-20</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2019/08/28/Java8%E9%81%8D%E5%8E%86Map%E7%9A%84%E4%B8%89%E7%A7%8D%E6%96%B9%E5%BC%8F%E2%80%94%E2%80%94for-stream-forEach/" class="title">Java8遍历Map的三种方式——for/stream/forEach</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2019-08-28T06:22:58.000Z" itemprop="datePublished">2019-08-28</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2019/04/17/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E6%8E%88%E6%9D%83%E8%BF%87%E7%A8%8B/" class="title">Spring Security原理介绍、源码解析——授权过程</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2019-04-17T07:05:58.000Z" itemprop="datePublished">2019-04-17</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-SpringCloud实践分享-Config配置中心" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      SpringCloud实践分享-Config配置中心
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2018/06/07/SpringCloud%E5%AE%9E%E8%B7%B5%E5%88%86%E4%BA%AB-Config%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" class="article-date">
+	  <time datetime="2018-06-07T06:17:58.000Z" itemprop="datePublished">2018-06-07</time>
+	</a>
+</span>
+        
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/spring-cloud/" rel="tag">spring cloud</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2018/06/07/SpringCloud%E5%AE%9E%E8%B7%B5%E5%88%86%E4%BA%AB-Config%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/#comments" class="article-comment-link">Comments</a></span>
+        
+	
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">Word Count: 1.5k(words)</span>
+	
+	
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">Read Count: 5(minutes)</span>
+	
+
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>在服务中经常会遇到一些易变的参数，例如数据库地址、超时时间等等。这些参数与代码关系耦合度低，但是每改一次就去修改代码中的参数，再去编译部署<br>显得很蠢，于是就有了配置中心得个实现。目前用的比较多的配置中心有SpringCloudConfig和携程的<a target="_blank" rel="noopener" href="https://github.com/ctripcorp/apollo">Apollo</a>。<br>SpringCloudConfig的好处是和SpringCloud绑定，全家桶（有好处有坏处，你懂的），部署简单；而Apollo部署比较麻烦，它首先要把部署地址写死在apollo-client中编译出来，<br>然后在配置项目中引用apollo-client……（既然是配置中心，为什么配置中心本身不能做到代码和参数的解耦？！）当然，这都是我一些私货，<br>事实上apollo功能十分强大，权限功能完整，并且支持多语言，大家都知道携程的技术栈主要是.net。两种各有长短，有兴趣的同学可以去github上看看，<br>文档说明十分详细。书归正传，接下来主要讲Spring Cloud Config。</p>
+<h3 id="启动Config"><a href="#启动Config" class="headerlink" title="启动Config"></a>启动Config</h3><p>Config的配置同样简单:加入依赖<code>spring-cloud-config-server</code>，入口类加入注解<code>@EnableConfigServer</code>和<code>@EnableDiscoveryClient</code>，<br>前一个注解是使能Config注册中心，后一个则是注册到Eureka上，让其他服务找到该服务。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.springframework.cloud&lt;&#x2F;groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;spring-cloud-config-server&lt;&#x2F;artifactId&gt;</span><br><span class="line">&lt;&#x2F;dependency&gt;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">@EnableDiscoveryClient</span><br><span class="line">@EnableConfigServer</span><br><span class="line">@SpringBootApplication</span><br><span class="line">public class ConfigApplication &#123;</span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line">        SpringApplication.run(ConfigApplication.class, args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Config-Server配置"><a href="#Config-Server配置" class="headerlink" title="Config Server配置"></a>Config Server配置</h3><p>首先说注册中心Eureka相关内容，服务注册地址<code>eureka.client.serviceUrl.defaultZone</code>以及自己是谁<code>spring.application.name</code>即可。<br>我在这里加上<code>prefer-ip-address</code>的配置，后面会相信说明。</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">application:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">config-server</span></span><br><span class="line"><span class="attr">eureka:</span></span><br><span class="line">  <span class="attr">instance:</span></span><br><span class="line">    <span class="attr">prefer-ip-address:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">client:</span></span><br><span class="line">    <span class="attr">serviceUrl:</span></span><br><span class="line">      <span class="attr">defaultZone:</span> <span class="string">http://localhost:8761/eureka/</span></span><br></pre></td></tr></table></figure>
+<p>然后是就是配置中心相关内容。配置中心一般采用git或svn才作为配置存储端，官方文档上还有以jdbc数据库来存储的，本文以git来说明。<br>其中<code>spring.cloud.config.server.uri</code>是配置文件存放的git地址，为了更直观演示，我在gitee上配置相应的内容。<br>而<code>search-paths</code>则是在该库下的搜索路径，我们这里配置成了<code>&#39;&#123;application&#125;&#39;</code>代表不同服务会去git项目下找与项目名（<code>spring.application.name</code>）对应的文件。<br>其规则为<code>&#123;application&#125;-&#123;profile&#125;.yml</code></p>
+<p>例如，服务A中<code>spring.application.name: fuwu1</code>,则服务A在启动的时，配置中心则会找<code>git.uri</code>下的<code>fuwu1.yml</code>文件交给服务A作为配置。<br>服务A启动时，带有<code>-Dspring.profiles.active=master</code>参数时,则会配置中心则会找<code>git.uri</code>下的<code>fuwu1-master.yml</code>文件交给服务A作为配置。</p>
+<p>配置同样需要有权限管理，而配置中心的权限逻辑和git相同（如果你使用git作为存储后端）。<br>我们可以配置<code>username</code>和<code>password</code>，如果需要有更高的要求，还可以和git一样，配置公钥私钥。在git上放上公钥，<br>在<code>private-key</code>这里直接填写私钥内容，你甚至可以代码上去掉权限信息，而在部署的服务器中配上私钥。总之，git是怎么配它就是怎么配置。<br>（<a target="_blank" rel="noopener" href="https://my.oschina.net/yangzijing/blog/1476531">git相关内容点击这里</a>）</p>
+<p>还有一种配置路径的逻辑大概是这样：<code>uri: git@your-git-address:your-config-repo/&#123;application&#125;.git</code>，不同的项目配置放在不同的仓库，<br>这样可以配置不同仓库的权限。如果是这样配置，仓库里的文件命规则是<code>application-&#123;profile&#125;.yml</code>。</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">config:</span></span><br><span class="line">      <span class="attr">server:</span></span><br><span class="line">        <span class="attr">git:</span></span><br><span class="line">          <span class="attr">uri:</span> <span class="string">git@gitee.com:yangzijing/config.git</span></span><br><span class="line">          <span class="attr">search-paths:</span> <span class="string">&#x27;&#123;application&#125;&#x27;</span></span><br><span class="line">          <span class="comment">#uri: git@your-git-address:your-config-repo/&#123;application&#125;.git</span></span><br><span class="line">          <span class="comment">#private-key:</span></span><br><span class="line">          <span class="comment">#username: yourusername</span></span><br><span class="line">          <span class="comment">#password: yourpassword</span></span><br></pre></td></tr></table></figure>
+<h3 id="Config客户端配置"><a href="#Config客户端配置" class="headerlink" title="Config客户端配置"></a>Config客户端配置</h3><p>客户端配置同样也是两类，eureka的配置和config的配置，要注意这些配置要写在bootstrap.yml中。简单来讲bootstrap和application的区别，<br>bootstrap.yml中的配置先启动，application.yml中的配置后启动，而需要动态配置的配置项则写在application.yml中。</p>
+<p>Eureka相关的配置不再赘述，主要关心一下config的配置。配置可以有两种，1）指定config的ip，直接在<code>spring.cloud.config.uri</code>配上地址即可。<br>2）通过Eureka找到Config的地址,配置<code>spring.cloud.config.discovery.enabled=true</code>和<code>discovery.service-id</code>(这里的service-id和config项目的<code>spring.application.name</code>名字一致，其默认值是configserver)。</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">application:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">api-admin</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">config:</span></span><br><span class="line">      <span class="comment">#uri: http://ip:port</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">enabled:</span> <span class="literal">true</span></span><br><span class="line">        <span class="attr">service-id:</span> <span class="string">config-server</span></span><br></pre></td></tr></table></figure>
+<p>在api-admin项目中，增加了一个<code>from</code>配置，在<code>application.yml</code>可写可不写，如果写，还可以添加默认值<code>from: $&#123;from:hello&#125;</code>;如果不写，也可以，<br>同样也可以在java文件中直接引用,例如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Value(&quot;$&#123;from&#125;&quot;)</span></span><br><span class="line"><span class="keyword">private</span> String from;</span><br></pre></td></tr></table></figure>
+<p>但是要注意的是，使用了配置中心功能后，如果占位符（${xxx}）没有被正确替换，整个程序是会报错了，不管你用了没用默认值，这个是不科学的。</p>
+<h3 id="利用WebHook自动刷新"><a href="#利用WebHook自动刷新" class="headerlink" title="利用WebHook自动刷新"></a>利用WebHook自动刷新</h3><p>在引用了配置的类上添加<code>@RefreshScope</code>注解，即可实现自动刷新，还有一点，需要在git中的webhook（例如GitHub，GitLab，Gitee）添加上<a href="http://config-ip:port/bus/refresh即可。">http://config-ip:port/bus/refresh即可。</a></p>
+<p>流程大致为： git仓库更新 -&gt; 触发webhook-&gt; 触发config的刷新端点-&gt; config通知应用 -&gt; 应用刷新配置内容。</p>
+<h3 id="遇到的一个prefer-ip-address问题"><a href="#遇到的一个prefer-ip-address问题" class="headerlink" title="遇到的一个prefer-ip-address问题"></a>遇到的一个prefer-ip-address问题</h3><p>在调试过程中发现一个问题，如果在config服务端<code>prefer-ip-address</code>没有打开，客户端则会找不到config服务端。在网上找了一下关于该配置的解释，<br>希望对大家有用<a target="_blank" rel="noopener" href="http://www.itmuch.com/spring-cloud-code-read/spring-cloud-code-read-eureka-registry-ip/">prefer-ip-address机制解释</a></p>
+<p>config的大致内容就说完了，可能还差配置内容加密，稍微有些繁杂，有机会再补充，急需可以查一下<br><a target="_blank" rel="noopener" href="https://cloud.spring.io/spring-cloud-static/Edgware.SR3/multi/multi__spring_cloud_config_server.html#_security">官方文档</a>，或者别的中文博客</p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="https://jevonyang.github.io/2018/06/07/SpringCloud%E5%AE%9E%E8%B7%B5%E5%88%86%E4%BA%AB-Config%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" title="SpringCloud实践分享-Config配置中心" target="_blank" rel="external">https://jevonyang.github.io/2018/06/07/SpringCloud%E5%AE%9E%E8%B7%B5%E5%88%86%E4%BA%AB-Config%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/JevonYang" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/JevonYang" target="_blank"><span class="text-dark">JevonYang</span><small class="ml-1x">Data Analyst</small></a></h3>
+        <div>Be a better coder!</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2018/06/11/SpringCloud%E5%AE%9E%E8%B7%B5%E5%88%86%E4%BA%AB-%E6%97%A5%E5%BF%97%E6%94%B6%E9%9B%86Kafka-ELK/" title="SpringCloud实践分享-日志收集Kafka-ELK"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;Newer</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2018/06/07/SpringCloud%E5%AE%9E%E8%B7%B5%E5%88%86%E4%BA%AB-Eureka%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/" title="SpringCloud实践分享-Eureka注册中心"><span>Older&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/JevonYang" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="http://weibo.com/theendy" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: 'Posts',
+            PAGES: 'Pages',
+            CATEGORIES: 'Categories',
+            TAGS: 'Tags',
+            UNTITLED: '(Untitled)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+    <script>
+(function ($) {
+    $('.search-form').on('submit', function (e) {
+        var keyword = $('.search-form-input[name="wd"]').val();
+        window.location = 'https://www.baidu.com/s?wd=site:jevonyang.github.io ' + keyword;
+        return false;
+    });
+})(jQuery);
+</script>
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

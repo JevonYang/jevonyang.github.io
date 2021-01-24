@@ -1,37 +1,600 @@
-{% extends '_layout.swig' %}
-{% import '_macro/post.swig' as post_template %}
-{% import '_macro/sidebar.swig' as sidebar_template %}
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>Spring Security原理介绍、源码解析——授权过程 | JevonYang&#39;s blog</title>
+  <meta name="description" content="流程简述当我们成功登录，获取access_token，即可使用该token来访问有权限的接口。如上文所讲，JwtAuthenticationFilter将access_token转化为系统可识别的Authentication放入安全上下文，则来到最后一个过滤器FilterSecurityInterceptor,该过滤则是判断请求是否拥有权限。 123456789101112131415161718">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring Security原理介绍、源码解析——授权过程">
+<meta property="og:url" content="https://jevonyang.github.io/2019/04/17/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E6%8E%88%E6%9D%83%E8%BF%87%E7%A8%8B/index.html">
+<meta property="og:site_name" content="JevonYang的博客">
+<meta property="og:description" content="流程简述当我们成功登录，获取access_token，即可使用该token来访问有权限的接口。如上文所讲，JwtAuthenticationFilter将access_token转化为系统可识别的Authentication放入安全上下文，则来到最后一个过滤器FilterSecurityInterceptor,该过滤则是判断请求是否拥有权限。 123456789101112131415161718">
+<meta property="og:locale">
+<meta property="article:published_time" content="2019-04-17T07:05:58.000Z">
+<meta property="article:modified_time" content="2021-01-24T07:20:09.233Z">
+<meta property="article:author" content="JevonYang">
+<meta property="article:tag" content="spring security">
+<meta name="twitter:card" content="summary">
+  <!-- Canonical links -->
+  <link rel="canonical" href="https://jevonyang.github.io/2019/04/17/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E6%8E%88%E6%9D%83%E8%BF%87%E7%A8%8B/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="JevonYang的博客" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.3.0"></head>
 
 
-{% block title %}{{ page.title }} | {{ config.title }}{% endblock %}
+<body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/JevonYang" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">JevonYang</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">Data Analyst</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> 中国北京</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
 
-{% block page_class %}page-post-detail{% endblock %}
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="Search" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="Type something..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
 
 
-{% block content %}
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">Home</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">Archives</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">Categories</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">Tags</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">Repository</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">Books</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">Links</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">About</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/JevonYang" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="http://weibo.com/theendy" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
 
-  <div id="posts" class="posts-expand">
-    {{ post_template.render(page) }}
+    </nav>
+  </div>
+</header>
 
-    <div class="post-spread">
-      {% if theme.jiathis %}
-        {% include '_partials/share/jiathis.swig' %}
-      {% elseif theme.baidushare %}
-        {% include '_partials/share/baidushare.swig' %}
-      {% elseif theme.add_this_id %}
-        {% include '_partials/share/add-this.swig' %}
-      {% elseif theme.duoshuo_shortname and theme.duoshuo_share %}
-        {% include '_partials/share/duoshuo_share.swig' %}
-      {% endif %}
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">Board</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/callback/" rel="tag">callback</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/devops/" rel="tag">devops</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/" rel="tag">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/" rel="tag">java</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/reactive-spring-webflux/" rel="tag">reactive, spring webflux</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spring-cloud/" rel="tag">spring cloud</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spring-security/" rel="tag">spring security</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" rel="tag">大数据</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
-{% endblock %}
 
-{% block sidebar %}
-  {{ sidebar_template.render(true) }}
-{% endblock %}
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/callback/" style="font-size: 13px;">callback</a> <a href="/tags/devops/" style="font-size: 13px;">devops</a> <a href="/tags/git/" style="font-size: 13px;">git</a> <a href="/tags/java/" style="font-size: 13px;">java</a> <a href="/tags/reactive-spring-webflux/" style="font-size: 13px;">reactive, spring webflux</a> <a href="/tags/spring-cloud/" style="font-size: 14px;">spring cloud</a> <a href="/tags/spring-security/" style="font-size: 13.5px;">spring security</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 13px;">大数据</a>
+    </div>
+  </div>
 
-{% block script_extra %}
-  {% include '_scripts/pages/post-details.swig' %}
-{% endblock %}
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Archive</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/01/">January 2021</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/09/">September 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/04/">April 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/03/">March 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/07/">July 2017</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2021/01/23/Flink%E9%83%A8%E7%BD%B2%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/" class="title">Flink部署简单介绍</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2021-01-23T11:09:54.000Z" itemprop="datePublished">2021-01-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2020/09/21/%5BReactive%5D%E5%9C%A8SpringWebFlux%E4%BD%BF%E7%94%A8%E7%BC%93%E5%AD%98/" class="title">在SpringWebFlux使用缓存</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2020-09-21T07:37:58.000Z" itemprop="datePublished">2020-09-21</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2019/09/20/Java%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%9B%9E%E8%B0%83%E5%9C%B0%E7%8B%B1%EF%BC%88Callback%20Hell%EF%BC%89%EF%BC%9F/" class="title">Java如何实现一个回调地狱（Callback Hell）？</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2019-09-20T09:58:58.000Z" itemprop="datePublished">2019-09-20</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2019/08/28/Java8%E9%81%8D%E5%8E%86Map%E7%9A%84%E4%B8%89%E7%A7%8D%E6%96%B9%E5%BC%8F%E2%80%94%E2%80%94for-stream-forEach/" class="title">Java8遍历Map的三种方式——for/stream/forEach</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2019-08-28T06:22:58.000Z" itemprop="datePublished">2019-08-28</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2019/04/17/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E6%8E%88%E6%9D%83%E8%BF%87%E7%A8%8B/" class="title">Spring Security原理介绍、源码解析——授权过程</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2019-04-17T07:05:58.000Z" itemprop="datePublished">2019-04-17</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-Spring Security原理介绍、源码解析——授权过程" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Spring Security原理介绍、源码解析——授权过程
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2019/04/17/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E6%8E%88%E6%9D%83%E8%BF%87%E7%A8%8B/" class="article-date">
+	  <time datetime="2019-04-17T07:05:58.000Z" itemprop="datePublished">2019-04-17</time>
+	</a>
+</span>
+        
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/spring-security/" rel="tag">spring security</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2019/04/17/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E6%8E%88%E6%9D%83%E8%BF%87%E7%A8%8B/#comments" class="article-comment-link">Comments</a></span>
+        
+	
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">Word Count: 1.2k(words)</span>
+	
+	
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">Read Count: 5(minutes)</span>
+	
+
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <h3 id="流程简述"><a href="#流程简述" class="headerlink" title="流程简述"></a>流程简述</h3><p>当我们成功登录，获取<code>access_token</code>，即可使用该token来访问有权限的接口。如<a target="_blank" rel="noopener" href="https://my.oschina.net/yangzijing/blog/3023020" title="上文">上文</a>所讲，<code>JwtAuthenticationFilter</code>将<code>access_token</code>转化为系统可识别的<code>Authentication</code>放入安全上下文，<br>则来到最后一个过滤器<code>FilterSecurityInterceptor</code>,该过滤则是判断请求是否拥有权限。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FilterSecurityInterceptor</span> <span class="keyword">extends</span> <span class="title">AbstractSecurityInterceptor</span> <span class="keyword">implements</span> <span class="title">Filter</span> </span>&#123;</span><br><span class="line">  </span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doFilter</span><span class="params">(ServletRequest request, ServletResponse response, </span></span></span><br><span class="line"><span class="function"><span class="params">    FilterChain chain)</span> <span class="keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">	  FilterInvocation fi = <span class="keyword">new</span> FilterInvocation(request, response, chain);</span><br><span class="line">	  invoke(fi);</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">invoke</span><span class="params">(FilterInvocation fi)</span> <span class="keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ((fi.getRequest() != <span class="keyword">null</span>)</span><br><span class="line">	  &amp;&amp; (fi.getRequest().getAttribute(FILTER_APPLIED) != <span class="keyword">null</span>)</span><br><span class="line">	  &amp;&amp; observeOncePerRequest) &#123;</span><br><span class="line">	    <span class="comment">// filter already applied to this request and user wants us to observe</span></span><br><span class="line">		<span class="comment">// once-per-request handling, so don&#x27;t re-do security checking</span></span><br><span class="line">	  fi.getChain().doFilter(fi.getRequest(), fi.getResponse());</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">	  <span class="comment">// first time this request being called, so perform security checking</span></span><br><span class="line">	  <span class="keyword">if</span> (fi.getRequest() != <span class="keyword">null</span> &amp;&amp; observeOncePerRequest) &#123;</span><br><span class="line">	      fi.getRequest().setAttribute(FILTER_APPLIED, Boolean.TRUE);</span><br><span class="line">	  &#125;</span><br><span class="line">	  <span class="comment">// 请求之前的工作，也就是真正的权限认证的过程</span></span><br><span class="line">	  InterceptorStatusToken token = <span class="keyword">super</span>.beforeInvocation(fi);</span><br><span class="line">	  <span class="keyword">try</span> &#123;</span><br><span class="line">	    <span class="comment">// 请求真正的controller</span></span><br><span class="line">	    fi.getChain().doFilter(fi.getRequest(), fi.getResponse());</span><br><span class="line">	  &#125;</span><br><span class="line">	  <span class="keyword">finally</span> &#123;</span><br><span class="line">	    <span class="keyword">super</span>.finallyInvocation(token);</span><br><span class="line">	  &#125;</span><br><span class="line">	  <span class="comment">// 请求后的工作</span></span><br><span class="line">	  <span class="keyword">super</span>.afterInvocation(token, <span class="keyword">null</span>);</span><br><span class="line">	&#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>FilterSecurityInterceptor的主体方法依旧在doFilter中，而其中主要的方法为invoke()，大约分为三个步骤：</p>
+<ol>
+<li>beforeInvocation(fi);  验证Context中的Authentication和目标url所需权限是否匹配，匹配则通过，不通过则抛出异常。</li>
+<li>fi.getChain().doFilter(fi.getRequest(), fi.getResponse());  在此可以看做是，真正去访问目标Controller。</li>
+<li>afterInvocation(token, null); 获取请求后的操作。</li>
+</ol>
+<p>首先来看看beforeInvocation()</p>
+<h3 id="beforeInvocation"><a href="#beforeInvocation" class="headerlink" title="beforeInvocation"></a>beforeInvocation</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractSecurityInterceptor</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">protected</span> InterceptorStatusToken <span class="title">beforeInvocation</span><span class="params">(Object object)</span> </span>&#123;</span><br><span class="line">     <span class="comment">// 获取目标url的权限内容，这些内容可以从configuration中获取也可以用MetadataSource中获取</span></span><br><span class="line">     Collection&lt;ConfigAttribute&gt; attributes = <span class="keyword">this</span>.obtainSecurityMetadataSource().getAttributes(object);</span><br><span class="line">     <span class="comment">// ……省略</span></span><br><span class="line">    </span><br><span class="line">  	 Authentication authenticated = authenticateIfRequired();</span><br><span class="line">  </span><br><span class="line">  	 <span class="comment">// Attempt authorization</span></span><br><span class="line">  	 <span class="keyword">try</span> &#123;</span><br><span class="line">  	    <span class="comment">// AccessDecisionManager用于验证Authentication中的权限和目标url所需权限是否匹配，如果不匹配则抛出AccessDeniedException异常</span></span><br><span class="line">  	    <span class="keyword">this</span>.accessDecisionManager.decide(authenticated, object, attributes);</span><br><span class="line">  	 &#125;</span><br><span class="line">  	 <span class="keyword">catch</span> (AccessDeniedException accessDeniedException) &#123;</span><br><span class="line">  		publishEvent(<span class="keyword">new</span> AuthorizationFailureEvent(object, attributes, authenticated,</span><br><span class="line">  			accessDeniedException));</span><br><span class="line">    			<span class="keyword">throw</span> accessDeniedException;</span><br><span class="line">  	 &#125;</span><br><span class="line">  </span><br><span class="line">  	 <span class="comment">// Attempt to run as a different user</span></span><br><span class="line">  	 Authentication runAs = <span class="keyword">this</span>.runAsManager.buildRunAs(authenticated, object, attributes);</span><br><span class="line">  	 </span><br><span class="line">  	 <span class="comment">// 下一步则是生成InterceptorStatusToken，用于AfterInvocation步骤。有兴趣可以自己看</span></span><br><span class="line">  	 <span class="keyword">if</span> (runAs == <span class="keyword">null</span>) &#123;</span><br><span class="line">  	   <span class="comment">// no further work post-invocation</span></span><br><span class="line">  		<span class="keyword">return</span> <span class="keyword">new</span> InterceptorStatusToken(SecurityContextHolder.getContext(), <span class="keyword">false</span>, attributes, object);</span><br><span class="line">  	 &#125;</span><br><span class="line">  	 <span class="keyword">else</span> &#123;</span><br><span class="line">  		SecurityContext origCtx = SecurityContextHolder.getContext();</span><br><span class="line">  		SecurityContextHolder.setContext(SecurityContextHolder.createEmptyContext());</span><br><span class="line">  		SecurityContextHolder.getContext().setAuthentication(runAs);</span><br><span class="line">  		<span class="comment">// need to revert to token.Authenticated post-invocation</span></span><br><span class="line">  		<span class="keyword">return</span> <span class="keyword">new</span> InterceptorStatusToken(origCtx, <span class="keyword">true</span>, attributes, object);</span><br><span class="line">  	 &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>Collection&lt;ConfigAttribute&gt; attributes = this.obtainSecurityMetadataSource().getAttributes(object);</code>获取目标url所需要的权限，<br>该类实现<code>FilterInvocationSecurityMetadataSource</code>接口的方法。而配置url权限也可以从<code>WebSecurityConfig</code>中的configuration方法配置。</li>
+<li><code>this.accessDecisionManager.decide(authenticated, object, attributes);</code><br>判断<code>Authentication</code>中的权限目标url所需权限是否匹配，匹配则通过；不匹配则抛出<code>AccessDeniedException</code>异常。<br>该方法来自<code>AbstractAccessDecisionManager</code>的实现类，系统默认实现为<code>AffirmativeBased</code>。</li>
+<li><code>new InterceptorStatusToken(SecurityContextHolder.getContext(), false, attributes, object);</code><br>实现<code>InterceptorStatusToken</code>并返回，包括参数中的信息，如安全上下文、目标url所需权限、原始的访问请求。</li>
+</ol>
+<p>之后则访问目标Controller，获取真正的请求内容。</p>
+<h3 id="afterInvocation"><a href="#afterInvocation" class="headerlink" title="afterInvocation"></a>afterInvocation</h3><p>当我们启用了<code>@PreAuthorize()</code>、<code>@PostAuthorize()</code>注解的时候则会<code>AfterInvocationManger</code>,进而有以下验证逻辑。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractSecurityInterceptor</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">protected</span> Object <span class="title">afterInvocation</span><span class="params">(InterceptorStatusToken token, Object returnedObject)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (token == <span class="keyword">null</span>) &#123;</span><br><span class="line">  	  <span class="comment">// public object</span></span><br><span class="line">  	  <span class="keyword">return</span> returnedObject;</span><br><span class="line">  	&#125;</span><br><span class="line">  </span><br><span class="line">  	finallyInvocation(token); <span class="comment">// continue to clean in this method for passivity</span></span><br><span class="line">  </span><br><span class="line">  	<span class="keyword">if</span> (afterInvocationManager != <span class="keyword">null</span>) &#123;</span><br><span class="line">  	<span class="comment">// Attempt after invocation handling</span></span><br><span class="line">  	  <span class="keyword">try</span> &#123;</span><br><span class="line">  		returnedObject = afterInvocationManager.decide(token.getSecurityContext()</span><br><span class="line">  		  .getAuthentication(), token.getSecureObject(), token</span><br><span class="line">  		  .getAttributes(), returnedObject);</span><br><span class="line">  	  &#125;</span><br><span class="line">  	  <span class="keyword">catch</span> (AccessDeniedException accessDeniedException) &#123;</span><br><span class="line">  		AuthorizationFailureEvent event = <span class="keyword">new</span> AuthorizationFailureEvent(</span><br><span class="line">  		  token.getSecureObject(), token.getAttributes(), token</span><br><span class="line">  			.getSecurityContext().getAuthentication(),</span><br><span class="line">  		    	accessDeniedException);</span><br><span class="line">  		publishEvent(event);</span><br><span class="line">  		<span class="keyword">throw</span> accessDeniedException;</span><br><span class="line">  	  &#125;</span><br><span class="line">  	&#125;</span><br><span class="line">  	<span class="keyword">return</span> returnedObject;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以下代码则是包含<code>AfterInvocationManager</code>具体的实现。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">GlobalMethodSecurityConfiguration</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">protected</span> AfterInvocationManager <span class="title">afterInvocationManager</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (prePostEnabled()) &#123;</span><br><span class="line">  	  AfterInvocationProviderManager invocationProviderManager = <span class="keyword">new</span> AfterInvocationProviderManager();</span><br><span class="line">  		ExpressionBasedPostInvocationAdvice postAdvice = <span class="keyword">new</span> ExpressionBasedPostInvocationAdvice(</span><br><span class="line">  	    	getExpressionHandler());</span><br><span class="line">  		PostInvocationAdviceProvider postInvocationAdviceProvider = <span class="keyword">new</span> PostInvocationAdviceProvider(</span><br><span class="line">  			postAdvice);</span><br><span class="line">  		List&lt;AfterInvocationProvider&gt; afterInvocationProviders = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">  		afterInvocationProviders.add(postInvocationAdviceProvider);</span><br><span class="line">  		invocationProviderManager.setProviders(afterInvocationProviders);</span><br><span class="line">  		<span class="keyword">return</span> invocationProviderManager;</span><br><span class="line">  	  &#125;</span><br><span class="line">  	<span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="我们可以做些什么？"><a href="#我们可以做些什么？" class="headerlink" title="我们可以做些什么？"></a>我们可以做些什么？</h3><ol>
+<li><p>实现<code>FilterInvocationSecurityMetadataSource</code>，用于启动时加载url所需的权限，这样就不用在configuration或者注解中将目标url权限‘写死’。<br>可以参照本例所写的实现<code>MyFilterInvocationSecurityMetadataSource</code>。</p>
+</li>
+<li><p>重载<code>AbstractAccessDecisionManager</code>，根据业务需要重写，请求目标权限和Authentication中权限的验证过程.<br>举个例子，Spring Security中默认的RBAC，即，权限认证都是根据角色判断，固定角色只能访问固定接口。<br>现在我们需要ACL权限模型，用户A权限为1，用户B权限为5，用户C权限为9，接口a需要权限6，则用户C可以访问，<br>而用户A、B不能访问，就是说权限大的可以访问权限小的接口，如果需要改变权限模型则重载该类即可。</p>
+</li>
+</ol>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>授权过程主要有哪些？</p>
+<ol>
+<li>获取请求目标所需权限，从<code>FilterInvocationSecurityMetadataSource</code>接口的实现类获取。</li>
+<li>对比安全上下文中<code>Authentication</code>中的权限是否匹配，在<code>AbstractAccessDecisionManager</code>的实现类中比较。</li>
+</ol>
+<h2 id="链接"><a href="#链接" class="headerlink" title="链接"></a>链接</h2><p>文章涉及到代码已传到gitee上，供大家参考： <a target="_blank" rel="noopener" href="https://gitee.com/yangzijing/spring-security-demo">https://gitee.com/yangzijing/spring-security-demo</a></p>
+<p>Spring Security源码庞大且复杂，本人水平有限，文章难免有错漏、表述不清之处，请大家支出。欢迎交流，希望和大家共同进步。</p>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="https://jevonyang.github.io/2019/04/17/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E6%8E%88%E6%9D%83%E8%BF%87%E7%A8%8B/" title="Spring Security原理介绍、源码解析——授权过程" target="_blank" rel="external">https://jevonyang.github.io/2019/04/17/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E6%8E%88%E6%9D%83%E8%BF%87%E7%A8%8B/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/JevonYang" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/JevonYang" target="_blank"><span class="text-dark">JevonYang</span><small class="ml-1x">Data Analyst</small></a></h3>
+        <div>Be a better coder!</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2019/08/28/Java8%E9%81%8D%E5%8E%86Map%E7%9A%84%E4%B8%89%E7%A7%8D%E6%96%B9%E5%BC%8F%E2%80%94%E2%80%94for-stream-forEach/" title="Java8遍历Map的三种方式——for/stream/forEach"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;Newer</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2019/03/15/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E8%AE%A4%E8%AF%81%E8%BF%87%E7%A8%8B/" title="Spring Security原理介绍、源码解析——认证过程"><span>Older&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/JevonYang" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="http://weibo.com/theendy" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: 'Posts',
+            PAGES: 'Pages',
+            CATEGORIES: 'Categories',
+            TAGS: 'Tags',
+            UNTITLED: '(Untitled)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+    <script>
+(function ($) {
+    $('.search-form').on('submit', function (e) {
+        var keyword = $('.search-form-input[name="wd"]').val();
+        window.location = 'https://www.baidu.com/s?wd=site:jevonyang.github.io ' + keyword;
+        return false;
+    });
+})(jQuery);
+</script>
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>

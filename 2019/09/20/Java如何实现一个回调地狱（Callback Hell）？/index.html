@@ -1,37 +1,646 @@
-{% extends '_layout.swig' %}
-{% import '_macro/post.swig' as post_template %}
-{% import '_macro/sidebar.swig' as sidebar_template %}
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform" />
+  <meta http-equiv="Cache-Control" content="no-siteapp" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="format-detection" content="telephone=no,email=no,adress=no">
+  <!-- Color theme for statusbar -->
+  <meta name="theme-color" content="#000000" />
+  <!-- 强制页面在当前窗口以独立页面显示,防止别人在框架里调用页面 -->
+  <meta http-equiv="window-target" content="_top" />
+  
+  
+  <title>Java如何实现一个回调地狱（Callback Hell）？ | JevonYang&#39;s blog</title>
+  <meta name="description" content="对于回调地狱（Callback hell），想必大家都不陌生，尤其对于前端的朋友，当然前端的朋友通过各种办法去避免回调地狱，比如Promise。但是对于后端的朋友，尤其在RxJava、Reactor等反应式编程框架兴起之后，对于回调地狱只是听得多，但是见得的少。 为了更好了解回调地狱Callback hell问题在哪，我们首先需要学会怎么写出一个回调地狱。在之前，我们得知道什么是回调函数。  本文">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java如何实现一个回调地狱（Callback Hell）？">
+<meta property="og:url" content="https://jevonyang.github.io/2019/09/20/Java%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%9B%9E%E8%B0%83%E5%9C%B0%E7%8B%B1%EF%BC%88Callback%20Hell%EF%BC%89%EF%BC%9F/index.html">
+<meta property="og:site_name" content="JevonYang的博客">
+<meta property="og:description" content="对于回调地狱（Callback hell），想必大家都不陌生，尤其对于前端的朋友，当然前端的朋友通过各种办法去避免回调地狱，比如Promise。但是对于后端的朋友，尤其在RxJava、Reactor等反应式编程框架兴起之后，对于回调地狱只是听得多，但是见得的少。 为了更好了解回调地狱Callback hell问题在哪，我们首先需要学会怎么写出一个回调地狱。在之前，我们得知道什么是回调函数。  本文">
+<meta property="og:locale">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2019/9/20/16d4e14b163f160d?w=537&h=296&f=png&s=10547">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2019/9/20/16d4e14b16145572?w=777&h=441&f=png&s=22141">
+<meta property="article:published_time" content="2019-09-20T09:58:58.000Z">
+<meta property="article:modified_time" content="2021-01-24T07:21:39.430Z">
+<meta property="article:author" content="JevonYang">
+<meta property="article:tag" content="callback">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://user-gold-cdn.xitu.io/2019/9/20/16d4e14b163f160d?w=537&h=296&f=png&s=10547">
+  <!-- Canonical links -->
+  <link rel="canonical" href="https://jevonyang.github.io/2019/09/20/Java%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%9B%9E%E8%B0%83%E5%9C%B0%E7%8B%B1%EF%BC%88Callback%20Hell%EF%BC%89%EF%BC%9F/index.html">
+  
+    <link rel="alternate" href="/atom.xml" title="JevonYang的博客" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png" type="image/x-icon">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+  
+  
+<meta name="generator" content="Hexo 5.3.0"></head>
 
 
-{% block title %}{{ page.title }} | {{ config.title }}{% endblock %}
+<body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage">
+  <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+  <div class="slimContent">
+    <div class="navbar-header">
+      
+      
+      <div class="profile-block text-center">
+        <a id="avatar" href="https://github.com/JevonYang" target="_blank">
+          <img class="img-circle img-rotate" src="/images/avatar.jpg" width="200" height="200">
+        </a>
+        <h2 id="name" class="hidden-xs hidden-sm">JevonYang</h2>
+        <h3 id="title" class="hidden-xs hidden-sm hidden-md">Data Analyst</h3>
+        <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i> 中国北京</small>
+      </div>
+      
+      <div class="search" id="search-form-wrap">
 
-{% block page_class %}page-post-detail{% endblock %}
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="Search" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i class="icon icon-search"></i></button>
+            </span>
+        </div>
+    </form>
+    <div class="ins-search">
+  <div class="ins-search-mask"></div>
+  <div class="ins-search-container">
+    <div class="ins-input-wrapper">
+      <input type="text" class="ins-search-input" placeholder="Type something..." x-webkit-speech />
+      <button type="button" class="close ins-close ins-selectable" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="ins-section-wrapper">
+      <div class="ins-section-container"></div>
+    </div>
+  </div>
+</div>
 
 
-{% block content %}
+</div>
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+      <ul class="nav navbar-nav main-nav ">
+        
+        
+        <li class="menu-item menu-item-home">
+          <a href="/.">
+            
+            <i class="icon icon-home-fill"></i>
+            
+            <span class="menu-title">Home</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives">
+            
+            <i class="icon icon-archives-fill"></i>
+            
+            <span class="menu-title">Archives</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories">
+            
+            <i class="icon icon-folder"></i>
+            
+            <span class="menu-title">Categories</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags">
+            
+            <i class="icon icon-tags"></i>
+            
+            <span class="menu-title">Tags</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-repository">
+          <a href="/repository">
+            
+            <i class="icon icon-project"></i>
+            
+            <span class="menu-title">Repository</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books">
+            
+            <i class="icon icon-book-fill"></i>
+            
+            <span class="menu-title">Books</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links">
+            
+            <i class="icon icon-friendship"></i>
+            
+            <span class="menu-title">Links</span>
+          </a>
+        </li>
+        
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about">
+            
+            <i class="icon icon-cup-fill"></i>
+            
+            <span class="menu-title">About</span>
+          </a>
+        </li>
+        
+      </ul>
+      
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/JevonYang" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="http://weibo.com/theendy" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
 
-  <div id="posts" class="posts-expand">
-    {{ post_template.render(page) }}
+    </nav>
+  </div>
+</header>
 
-    <div class="post-spread">
-      {% if theme.jiathis %}
-        {% include '_partials/share/jiathis.swig' %}
-      {% elseif theme.baidushare %}
-        {% include '_partials/share/baidushare.swig' %}
-      {% elseif theme.add_this_id %}
-        {% include '_partials/share/add-this.swig' %}
-      {% elseif theme.duoshuo_shortname and theme.duoshuo_share %}
-        {% include '_partials/share/duoshuo_share.swig' %}
-      {% endif %}
+  
+    <aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">Board</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content">
+                <p>欢迎交流与分享经验!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+      
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget-body">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/callback/" rel="tag">callback</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/devops/" rel="tag">devops</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/" rel="tag">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/" rel="tag">java</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/reactive-spring-webflux/" rel="tag">reactive, spring webflux</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spring-cloud/" rel="tag">spring cloud</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spring-security/" rel="tag">spring security</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" rel="tag">大数据</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
-{% endblock %}
 
-{% block sidebar %}
-  {{ sidebar_template.render(true) }}
-{% endblock %}
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget-body tagcloud">
+      <a href="/tags/callback/" style="font-size: 13px;">callback</a> <a href="/tags/devops/" style="font-size: 13px;">devops</a> <a href="/tags/git/" style="font-size: 13px;">git</a> <a href="/tags/java/" style="font-size: 13px;">java</a> <a href="/tags/reactive-spring-webflux/" style="font-size: 13px;">reactive, spring webflux</a> <a href="/tags/spring-cloud/" style="font-size: 14px;">spring cloud</a> <a href="/tags/spring-security/" style="font-size: 13.5px;">spring security</a> <a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/" style="font-size: 13px;">大数据</a>
+    </div>
+  </div>
 
-{% block script_extra %}
-  {% include '_scripts/pages/post-details.swig' %}
-{% endblock %}
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Archive</h3>
+    <div class="widget-body">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/01/">January 2021</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/09/">September 2020</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/08/">August 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/04/">April 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/03/">March 2019</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/08/">August 2017</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/07/">July 2017</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+    
+      
+  <div class="widget">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget-body">
+      <ul class="recent-post-list list-unstyled no-thumbnail">
+        
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2021/01/23/Flink%E9%83%A8%E7%BD%B2%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/" class="title">Flink部署简单介绍</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2021-01-23T11:09:54.000Z" itemprop="datePublished">2021-01-23</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2020/09/21/%5BReactive%5D%E5%9C%A8SpringWebFlux%E4%BD%BF%E7%94%A8%E7%BC%93%E5%AD%98/" class="title">在SpringWebFlux使用缓存</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2020-09-21T07:37:58.000Z" itemprop="datePublished">2020-09-21</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2019/09/20/Java%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%9B%9E%E8%B0%83%E5%9C%B0%E7%8B%B1%EF%BC%88Callback%20Hell%EF%BC%89%EF%BC%9F/" class="title">Java如何实现一个回调地狱（Callback Hell）？</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2019-09-20T09:58:58.000Z" itemprop="datePublished">2019-09-20</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2019/08/28/Java8%E9%81%8D%E5%8E%86Map%E7%9A%84%E4%B8%89%E7%A7%8D%E6%96%B9%E5%BC%8F%E2%80%94%E2%80%94for-stream-forEach/" class="title">Java8遍历Map的三种方式——for/stream/forEach</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2019-08-28T06:22:58.000Z" itemprop="datePublished">2019-08-28</time>
+              </p>
+            </div>
+          </li>
+          
+          <li>
+            
+            <div class="item-inner">
+              <p class="item-category">
+                
+              </p>
+              <p class="item-title">
+                <a href="/2019/04/17/Spring%20Security%E5%8E%9F%E7%90%86%E4%BB%8B%E7%BB%8D%E3%80%81%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90%E2%80%94%E2%80%94%E6%8E%88%E6%9D%83%E8%BF%87%E7%A8%8B/" class="title">Spring Security原理介绍、源码解析——授权过程</a>
+              </p>
+              <p class="item-date">
+                <time datetime="2019-04-17T07:05:58.000Z" itemprop="datePublished">2019-04-17</time>
+              </p>
+            </div>
+          </li>
+          
+      </ul>
+    </div>
+  </div>
+  
+
+    
+  </div>
+</aside>
+
+  
+  
+<main class="main" role="main">
+  <div class="content">
+  <article id="post-Java如何实现一个回调地狱（Callback Hell）？" class="article article-type-post" itemscope itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Java如何实现一个回调地狱（Callback Hell）？
+    </h1>
+  
+
+      
+      <div class="article-meta">
+        <span class="article-date">
+    <i class="icon icon-calendar-check"></i>
+	<a href="/2019/09/20/Java%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%9B%9E%E8%B0%83%E5%9C%B0%E7%8B%B1%EF%BC%88Callback%20Hell%EF%BC%89%EF%BC%9F/" class="article-date">
+	  <time datetime="2019-09-20T09:58:58.000Z" itemprop="datePublished">2019-09-20</time>
+	</a>
+</span>
+        
+        
+  <span class="article-tag">
+    <i class="icon icon-tags"></i>
+	<a class="article-tag-link-link" href="/tags/callback/" rel="tag">callback</a>
+  </span>
+
+
+        
+
+        <span class="post-comment"><i class="icon icon-comment"></i> <a href="/2019/09/20/Java%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%9B%9E%E8%B0%83%E5%9C%B0%E7%8B%B1%EF%BC%88Callback%20Hell%EF%BC%89%EF%BC%9F/#comments" class="article-comment-link">Comments</a></span>
+        
+	
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">Word Count: 2.9k(words)</span>
+	
+	
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">Read Count: 11(minutes)</span>
+	
+
+      </div>
+    </div>
+    <div class="article-entry marked-body" itemprop="articleBody">
+      
+        <p>对于回调地狱（Callback hell），想必大家都不陌生，尤其对于前端的朋友，当然前端的朋友通过各种办法去避免回调地狱，比如Promise。但是对于后端的朋友，尤其在RxJava、Reactor等反应式编程框架兴起之后，对于回调地狱只是听得多，但是见得的少。</p>
+<p>为了更好了解回调地狱Callback hell问题在哪，我们首先需要学会怎么写出一个回调地狱。在之前，我们得知道什么是回调函数。</p>
+<blockquote>
+<p>本文将包含：</p>
+<ul>
+<li>  <strong>什么是回调</strong></li>
+<li>  <strong>回调的优势</strong></li>
+<li>  <strong>回调地狱是什么</strong></li>
+<li>  <strong>为什么会出现回调地狱</strong></li>
+<li>  <strong>回调和Future有什么区别</strong></li>
+<li>  <strong>如何解决回调地狱</strong></li>
+</ul>
+</blockquote>
+<p>我们今天从最开始讲起，先讲讲什么是回调函数。</p>
+<h1 id="什么是回调函数？"><a href="#什么是回调函数？" class="headerlink" title="什么是回调函数？"></a>什么是回调函数？</h1><p>在百度百科上，是这么说的：</p>
+<blockquote>
+<p>回调函数就是一个通过函数指针调用的函数。如果你把函数的指针（地址）作为参数传递给另一个函数，当这个指针被用来调用其所指向的函数时，我们就说这是回调函数。回调函数不是由该函数的实现方直接调用，而是在特定的事件或条件发生时由另外的一方调用的，用于对该事件或条件进行响应。 回调是任何一个被以方法为其第一个参数的其它方法的调用的方法。很多时候，回调是一个当某些事件发生时被调用的方法。</p>
+</blockquote>
+<p>什么？不好理解？确实很难理解，并且这段解释还有指针云云，对于java用户实在是不友好。</p>
+<p>给大家举个例子，供大家参考，也欢迎批评指正：</p>
+<blockquote>
+<p>回调：调用方在调用被调方后，被调方还将结果反馈给调用方。（A调用B，B完成后，将结果反馈给A）</p>
+</blockquote>
+<blockquote>
+<p>举个例子：老板安排员工一项工作，员工去完成。员工完成工作后，给老板反馈工作结果。这个过程就叫回调。 <img src="https://user-gold-cdn.xitu.io/2019/9/20/16d4e14b163f160d?w=537&h=296&f=png&s=10547" alt="回调示例" title="回调示例"></p>
+</blockquote>
+<p>这下容易理解很多了吧！Talk is cheap, Show me the code! 好，我们就用这个写一个简单的例子。</p>
+<h2 id="回调的例子"><a href="#回调的例子" class="headerlink" title="回调的例子"></a>回调的例子</h2><h2 id="Callback接口"><a href="#Callback接口" class="headerlink" title="Callback接口"></a>Callback接口</h2><p>首先，我们先写一个如下的<code>Callback</code>接口，接口只包含一个方法，用于callback操作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> yangzijing</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Callback</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 具体实现</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> t</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">callback</span><span class="params">(T t)</span></span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Boss类"><a href="#Boss类" class="headerlink" title="Boss类"></a>Boss类</h2><p>老板是被反馈的对象，于是需要实现<code>Callback</code>这个接口，重载<code>callback</code>方法；对于老板具体要干什么，当然是做大生意，于是有了<code>makeBigDeals</code>方法；老板当然不能是光杆司令，他需要一个员工，我们再构造方法里给他添加一个员工<code>Worker</code>，稍后我们来实现Worker类。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Boss</span> <span class="keyword">implements</span> <span class="title">Callback</span>&lt;<span class="title">String</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Worker worker;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Boss</span><span class="params">(Worker worker)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.worker = worker;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">callback</span><span class="params">(String s)</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">makeBigDeals</span><span class="params">(<span class="keyword">final</span> String someDetail)</span> </span>&#123;</span><br><span class="line">		worker.work(someDetail);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Worker类"><a href="#Worker类" class="headerlink" title="Worker类"></a>Worker类</h2><p>员工类，很简单，出入一个工作，完成就好了，返回结果即可。但是如何完成回调？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Worker</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">work</span><span class="params">(String someWork)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="string">&#x27;result&#x27;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们很容易想到就是这个思路，非常符合思维的逻辑，但是在回调中，我们需要做一些改变。</p>
+<h2 id="让代码回调起来"><a href="#让代码回调起来" class="headerlink" title="让代码回调起来"></a>让代码回调起来</h2><p>对于员工来说，需要知道两点，谁是老板，需要干啥。于是，输入两个参数，分别是老板和工作内容。具体内容分两步，首先完成任务，之后则是汇报给老板。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Worker</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">work</span><span class="params">(Callback&lt;String&gt; boss, String someWork)</span> </span>&#123;</span><br><span class="line">		String result = someWork + <span class="string">&#x27;is done!&#x27;</span>; <span class="comment">// 做一些具体的处理</span></span><br><span class="line">		boss.callback(result); <span class="comment">// 反馈结果给老板</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来，我们完成Boss类。在<code>callback</code>方法中，接收到传来的结果，并对结果进行处理，我们这里仅打印出来；在<code>makeBigDeals</code>方法中，老板分配工作，员工去完成，如果<strong>完成过程是异步</strong>，则是<code>异步调用</code>，<strong>如果是同步的</strong>，则是<code>同步回调</code>，我们这里采用异步方式。</p>
+<p>在新建线程中，我们执行<code>worker.work(Boss.this, someDetail)</code>，其中<code>Boss.this</code>即为当前对象，在这里，我们正式完成了<strong>回调</strong>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Boss</span> <span class="keyword">implements</span> <span class="title">Callback</span>&lt;<span class="title">String</span>&gt; </span>&#123;</span><br><span class="line">    ……</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">callback</span><span class="params">(String result)</span> </span>&#123; <span class="comment">// 参数为worker输出的结果</span></span><br><span class="line">		logger.info(<span class="string">&quot;Boss got: &#123;&#125;&quot;</span>, result) <span class="comment">// 接到完成的结果，并做处理，在这里我们仅打印出来</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">makeBigDeals</span><span class="params">(<span class="keyword">final</span> String someDetail)</span> </span>&#123;</span><br><span class="line">		logger.info(<span class="string">&quot;分配工作&quot;</span>);</span><br><span class="line">		<span class="keyword">new</span> Thread(() -&gt; worker.work(Boss.<span class="keyword">this</span>, someDetail)); <span class="comment">// 异步完成任务</span></span><br><span class="line">		logger.info(<span class="string">&quot;分配完成&quot;</span>);</span><br><span class="line">		logger.info(<span class="string">&quot;老板下班。。&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="回调结果"><a href="#回调结果" class="headerlink" title="回调结果"></a>回调结果</h2><p>Show me the result! 好，跑一下代码试一下。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Worker worker = <span class="keyword">new</span> Worker();</span><br><span class="line">Boss boss = <span class="keyword">new</span> Boss(worker); <span class="comment">// 给老板指派员工</span></span><br><span class="line">boss.makeBigDeals(<span class="string">&quot;coding&quot;</span>); <span class="comment">// 老板有一个代码要写</span></span><br></pre></td></tr></table></figure>
+<p>结果如下。在结果中可以看到，老板在分配完工作后就下班了，在下班后，另一个线程通知老板收到反馈”coding is done”。至此，我们完成了<strong>异步回调</strong>整个过程。</p>
+<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">INFO  2019 九月 20 11:30:54,780 [main]  - 分配工作</span><br><span class="line"> INFO  2019 九月 20 11:30:54,784 [main]  - 分配完成</span><br><span class="line"> INFO  2019 九月 20 11:30:54,784 [main]  - 老板下班。。</span><br><span class="line"> INFO  2019 九月 20 11:30:54,787 [Thread-0]  - Boss got: coding is done!</span><br></pre></td></tr></table></figure>
+<p>我将代码示例传至Github，供大家参考。 <a target="_blank" rel="noopener" href="https://github.com/JevonYang/reactor-tutorial/tree/master/src/main/java/com/yang/tutorial/callback">callback代码示例</a></p>
+<h2 id="回调的优势"><a href="#回调的优势" class="headerlink" title="回调的优势"></a>回调的优势</h2><ul>
+<li>  <strong>解耦</strong>，回调将<strong>子过程</strong>从<strong>主过程</strong>中解耦。 对于相同的输入，可能对其有不同的处理方式。在回调函数，我们完成主流程（例如上面的<code>Boss</code>类），对于过程中的子流程（例如上面的<code>Worker</code>类）从主流程中分离出来。对于主流程，我们只关心子过程的输入和输出，输入在上面的例子中即为<code>Worker.work</code>中的参数，而子过程的输出则是主过程的<code>callback</code>方法的参数。</li>
+<li>  异步回调<strong>不会阻塞</strong>主线程。上面的例子清晰可以看到，员工没有完成工作之前老板就已经下班，当工作完成后，会通过另一个线程通知老板。老板在这个过程无需等待子过程。</li>
+</ul>
+<h1 id="回调地狱"><a href="#回调地狱" class="headerlink" title="回调地狱"></a>回调地狱</h1><h2 id="总体设计"><a href="#总体设计" class="headerlink" title="总体设计"></a>总体设计</h2><blockquote>
+<p>我们将上述功能扩展，老板先将工作交给产品经理进行设计；设计完成后，交给程序员完成编码。流程示意如图。 <img src="https://user-gold-cdn.xitu.io/2019/9/20/16d4e14b16145572?w=777&h=441&f=png&s=22141" alt="回调地狱" title="回调地狱"></p>
+</blockquote>
+<h2 id="将任务交给产品经理"><a href="#将任务交给产品经理" class="headerlink" title="将任务交给产品经理"></a>将任务交给产品经理</h2><p>首先，写一个Callback，内部new一个产品经理的的<code>Worker</code>，在<code>makeBigDeal</code>方法实现主任务，将任务交给产品经理；在重载的<code>callback</code>方法中，获取产品经理的输出。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">new Callback&lt;String&gt;() &#123;</span><br><span class="line">            private Worker productManager &#x3D; new Worker();</span><br><span class="line">            @Override</span><br><span class="line">            public void callback(String s) &#123;</span><br><span class="line">                System.out.println(&quot;产品经理 output: &quot; + s); &#x2F;&#x2F; 获取产品经理的输出</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            public void makeBigDeals(String bigDeal) &#123;</span><br><span class="line">                System.out.println(&quot;Boss将任务交给产品&quot;);</span><br><span class="line">                new Thread(() -&gt; &#123;</span><br><span class="line">                    this.productManager.work(this, bigDeal); &#x2F;&#x2F; 异步调用产品经理处理过程</span><br><span class="line">                &#125;).start();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;.makeBigDeals(&quot;design&quot;);</span><br></pre></td></tr></table></figure>
+<h2 id="再将产品经理输出交给开发"><a href="#再将产品经理输出交给开发" class="headerlink" title="再将产品经理输出交给开发"></a>再将产品经理输出交给开发</h2><p>在拿到产品经理的输出之后，再将输出交给开发。于是我们在再次实现一个<code>Callback</code>接口。同样的，在<code>Callback</code>中，new一个开发的<code>Worker</code>，在<code>coding</code>方法中，调用<code>Worker</code>进行开发；在重载的<code>callback</code>方法中，获取开发处理后的结果。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">public void callback(String s) &#123;</span><br><span class="line">	System.out.println(&quot;产品经理 output: &quot; + s); &#x2F;&#x2F; 产品经理的输出</span><br><span class="line">	String midResult &#x3D; s + &quot; coding&quot;;</span><br><span class="line">	System.out.println(&quot;产品经理设计完成，再将任务交给开发&quot;);</span><br><span class="line">	new Callback&lt;String&gt;() &#123;</span><br><span class="line">		private Worker coder &#x3D; new Worker();</span><br><span class="line"></span><br><span class="line">		@Override</span><br><span class="line">		public void callback(String s) &#123;</span><br><span class="line">			System.out.println(&quot;result： &quot; + s); &#x2F;&#x2F; 获取开发后的结果</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		public void coding(String coding) &#123;</span><br><span class="line">			new Thread(() -&gt; coder.work(this, coding)).start(); &#x2F;&#x2F; 调用开发的Worker进行开发</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;.coding(midResult); &#x2F;&#x2F; 将产品经理的输出交给开发</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="完整的实现"><a href="#完整的实现" class="headerlink" title="完整的实现"></a>完整的实现</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> Callback&lt;String&gt;() &#123;</span><br><span class="line">            <span class="keyword">private</span> Worker productManager = <span class="keyword">new</span> Worker();</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">apply</span><span class="params">(String s)</span> </span>&#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;产品经理 output: &quot;</span> + s);</span><br><span class="line">                String midResult = s + <span class="string">&quot; coding&quot;</span>;</span><br><span class="line">                System.out.println(<span class="string">&quot;产品经理设计完成，再将任务交给开发&quot;</span>);</span><br><span class="line">                <span class="keyword">new</span> Callback&lt;String&gt;() &#123;</span><br><span class="line">					<span class="keyword">private</span> Worker coder = <span class="keyword">new</span> Worker();</span><br><span class="line">                    <span class="meta">@Override</span></span><br><span class="line">                    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">apply</span><span class="params">(String s)</span> </span>&#123;</span><br><span class="line">                        System.out.println(<span class="string">&quot;result： &quot;</span> + s);</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">coding</span><span class="params">(String coding)</span> </span>&#123;</span><br><span class="line">                        <span class="keyword">new</span> Thread(() -&gt; coder.work(<span class="keyword">this</span>, coding)).start();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;.coding(midResult);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">makeBigDeals</span><span class="params">(String bigDeal)</span> </span>&#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Boss将任务交给产品&quot;</span>);</span><br><span class="line">                <span class="keyword">new</span> Thread(() -&gt; <span class="keyword">this</span>.productManager.work(<span class="keyword">this</span>, bigDeal)).start();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;.makeBigDeals(<span class="string">&quot;design&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p>好了，一个简单的回调地狱完成了。Show me the result!</p>
+<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Boss将任务交给产品</span><br><span class="line">产品经理 output: design is done!</span><br><span class="line">产品经理设计完成，再将任务交给开发</span><br><span class="line">result： design is done! coding is done!</span><br></pre></td></tr></table></figure>
+<h2 id="回调地狱带来了什么？"><a href="#回调地狱带来了什么？" class="headerlink" title="回调地狱带来了什么？"></a>回调地狱带来了什么？</h2><p>到底什么是回调地狱？简单的说，回调地狱就是Callback里面又套了一个Callback，但是如果嵌套层数过多，仿佛掉入地狱，于是有了回调地狱的说法。</p>
+<p><strong>优势：</strong> 回调地狱给我们带来什么？事实上，<strong>回调的代码如同管道一样</strong>，<strong>接收输入，并将处理后的内容输出至下一步</strong>。而回调地狱，则是多个管道连接，形成的一个流程，而各个子流程（管道）相互独立。前端的朋友可能会更熟悉一些，例如<code>Promise.then().then().then()</code>,则是多个处理管道形成的流程。</p>
+<p><strong>劣势：</strong> 回调的方法虽然将子过程解耦，但是回调代码的可读性降低、复杂性大大增加。</p>
+<p>Callback Hell示例：<a target="_blank" rel="noopener" href="https://github.com/JevonYang/reactor-tutorial/blob/master/src/test/java/com/yang/tutorial/example/Examples.java">Callback Hell</a></p>
+<h2 id="和Future对比"><a href="#和Future对比" class="headerlink" title="和Future对比"></a>和Future对比</h2><p>在上面，我们提到异步回调不会阻塞主线程，那么使用Future也不会阻塞，和异步回调的差别在哪？</p>
+<p>我们写一个使用Future来异步调用的示例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">logger.info(<span class="string">&quot;分配工作...&quot;</span>);</span><br><span class="line">CompletableFuture&lt;String&gt; future = CompletableFuture.supplyAsync(() -&gt; worker.work(someDetail));</span><br><span class="line">logger.info(<span class="string">&quot;分配完工作。&quot;</span>);</span><br><span class="line">logger.info(<span class="string">&quot;老板下班回家了。。。&quot;</span>);</span><br><span class="line">logger.info(<span class="string">&quot;boss got the feedback from worker: &#123;&#125;&quot;</span>, future.get());</span><br></pre></td></tr></table></figure>
+<p>在上面的代码，我们可以看到，虽然<code>Worker</code>工作是异步的，但是老板获取工作的结果（<code>future.get()</code>）的时候却需要等待，而这个等待的过程是阻塞的。这是回调和Future一个显著的区别。</p>
+<p>回调和Future的对比： <a target="_blank" rel="noopener" href="https://github.com/JevonYang/reactor-tutorial/blob/master/src/test/java/com/yang/tutorial/example/Examples.java">callback和future对比</a></p>
+<h2 id="如何解决"><a href="#如何解决" class="headerlink" title="如何解决"></a>如何解决</h2><p>如何解决回调地狱的问题，最常用的就是反应式编程<a target="_blank" rel="noopener" href="https://github.com/ReactiveX/RxJava">RxJava</a>和<a target="_blank" rel="noopener" href="https://github.com/reactor/reactor-core">Reactor</a>，还有Kotlin的Coroutine协程，OpenJDK搞的<a target="_blank" rel="noopener" href="http://openjdk.java.net/projects/loom/">Project Loom</a>。其中各有优势，按下不表。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>总结一下：</p>
+<ol>
+<li> <strong>什么是回调</strong>。回调是调用方在调用被调方后，被调方还将结果反馈给调用方。（A调用B，B完成后，将结果反馈给A）</li>
+<li> <strong>回调的优势</strong>。1）子过程和主过程解耦。2）异步调用并且不会阻塞主线程。</li>
+<li> <strong>回调地狱是什么</strong>。回调地狱是回调函数多层嵌套，多到看不清=。=</li>
+<li> <strong>为什么会出现回调地狱</strong>。每一个回调像一个管道，接受输出，处理后将结果输出到下一管道。各个管道处理过程独立，多个管道组成整个处理过程。</li>
+<li> <strong>回调和Future有什么区别</strong>。1）两者机制不同；2）Future在等待结果时会阻塞，而回调不会阻塞。</li>
+<li> <strong>如何解决回调地狱</strong>。最常见的则是反应式编程RxJava和Reactor。</li>
+</ol>
+
+      
+    </div>
+    <div class="article-footer">
+      <blockquote class="mt-2x">
+  <ul class="post-copyright list-unstyled">
+    
+    <li class="post-copyright-link hidden-xs">
+      <strong>本文链接：</strong>
+      <a href="https://jevonyang.github.io/2019/09/20/Java%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%9B%9E%E8%B0%83%E5%9C%B0%E7%8B%B1%EF%BC%88Callback%20Hell%EF%BC%89%EF%BC%9F/" title="Java如何实现一个回调地狱（Callback Hell）？" target="_blank" rel="external">https://jevonyang.github.io/2019/09/20/Java%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%9B%9E%E8%B0%83%E5%9C%B0%E7%8B%B1%EF%BC%88Callback%20Hell%EF%BC%89%EF%BC%9F/</a>
+    </li>
+    
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong> 本博客所有文章除特别声明外，均采用 <a href="http://creativecommons.org/licenses/by/4.0/deed.zh" target="_blank" rel="external">CC BY 4.0 CN协议</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+</blockquote>
+
+
+<div class="panel panel-default panel-badger">
+  <div class="panel-body">
+    <figure class="media">
+      <div class="media-left">
+        <a href="https://github.com/JevonYang" target="_blank" class="img-burn thumb-sm visible-lg">
+          <img src="/images/avatar.jpg" class="img-rounded w-full" alt="">
+        </a>
+      </div>
+      <div class="media-body">
+        <h3 class="media-heading"><a href="https://github.com/JevonYang" target="_blank"><span class="text-dark">JevonYang</span><small class="ml-1x">Data Analyst</small></a></h3>
+        <div>Be a better coder!</div>
+      </div>
+    </figure>
+  </div>
+</div>
+
+
+    </div>
+  </article>
+  
+    
+  <section id="comments">
+  	
+      <div id="vcomments"></div>
+    
+  </section>
+
+
+  
+</div>
+
+  <nav class="bar bar-footer clearfix" data-stick-bottom>
+  <div class="bar-inner">
+  
+  <ul class="pager pull-left">
+    
+    <li class="prev">
+      <a href="/2020/09/21/%5BReactive%5D%E5%9C%A8SpringWebFlux%E4%BD%BF%E7%94%A8%E7%BC%93%E5%AD%98/" title="在SpringWebFlux使用缓存"><i class="icon icon-angle-left" aria-hidden="true"></i><span>&nbsp;&nbsp;Newer</span></a>
+    </li>
+    
+    
+    <li class="next">
+      <a href="/2019/08/28/Java8%E9%81%8D%E5%8E%86Map%E7%9A%84%E4%B8%89%E7%A7%8D%E6%96%B9%E5%BC%8F%E2%80%94%E2%80%94for-stream-forEach/" title="Java8遍历Map的三种方式——for/stream/forEach"><span>Older&nbsp;&nbsp;</span><i class="icon icon-angle-right" aria-hidden="true"></i></a>
+    </li>
+    
+    
+  </ul>
+  
+  
+  
+  <div class="bar-right">
+    
+    <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter" data-mobile-sites="weibo,qq,qzone"></div>
+    
+  </div>
+  </div>
+</nav>
+  
+
+
+</main>
+
+  <footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+	
+	
+    <ul class="social-links">
+    	
+        <li><a href="https://github.com/JevonYang" target="_blank" title="Github" data-toggle=tooltip data-placement=top><i class="icon icon-github"></i></a></li>
+        
+        <li><a href="http://weibo.com/theendy" target="_blank" title="Weibo" data-toggle=tooltip data-placement=top><i class="icon icon-weibo"></i></a></li>
+        
+        <li><a href="/atom.xml" target="_blank" title="Rss" data-toggle=tooltip data-placement=top><i class="icon icon-rss"></i></a></li>
+        
+    </ul>
+
+    <div class="copyright">
+    	
+        <div class="publishby">
+        	Theme by <a href="https://github.com/cofess" target="_blank"> cofess </a>base on <a href="https://github.com/cofess/hexo-theme-pure" target="_blank">pure</a>.
+        </div>
+    </div>
+</footer>
+  <script src="//cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script>
+window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="/js/plugin.min.js"></script>
+
+
+<script src="/js/application.js"></script>
+
+
+    <script>
+(function (window) {
+    var INSIGHT_CONFIG = {
+        TRANSLATION: {
+            POSTS: 'Posts',
+            PAGES: 'Pages',
+            CATEGORIES: 'Categories',
+            TAGS: 'Tags',
+            UNTITLED: '(Untitled)',
+        },
+        ROOT_URL: '/',
+        CONTENT_URL: '/content.json',
+    };
+    window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+})(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+
+
+    <script>
+(function ($) {
+    $('.search-form').on('submit', function (e) {
+        var keyword = $('.search-form-input[name="wd"]').val();
+        window.location = 'https://www.baidu.com/s?wd=site:jevonyang.github.io ' + keyword;
+        return false;
+    });
+})(jQuery);
+</script>
+
+
+
+
+   
+
+
+
+
+   
+    
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/valine"></script>
+  <script type="text/javascript">
+  var GUEST = ['nick', 'mail', 'link'];
+  var meta = 'nick,mail,link';
+  meta = meta.split(',').filter(function(item) {
+    return GUEST.indexOf(item) > -1;
+  });
+  new Valine({
+    el: '#vcomments',
+    verify: false,
+    notify: false,
+    appId: '',
+    appKey: '',
+    placeholder: 'Just go go',
+    avatar: 'mm',
+    meta: meta,
+    pageSize: '10' || 10,
+    visitor: false
+  });
+  </script>
+
+     
+
+
+
+
+
+
+
+</body>
+</html>
