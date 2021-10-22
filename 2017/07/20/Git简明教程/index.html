@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="renderer" content="webkit">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="google-site-verification" content="TZE0rZyIqLl10trYu3BWBWa1Vmz6HFwhb2OcNEK4u-s" />
+     <link rel="shortcut icon" href= /img/favicon.ico >
+    <title>
+        JevonYang的博客
+    </title>
+    <meta name="description" content= 欢迎访问！ >
+    <meta name="keywords" content= JevonYang >
+    
+<link rel="stylesheet" href="/libs/highlight/styles/monokai-sublime.css">
+
+    
+<link rel="stylesheet" href="/libs/font-awesome/css/font-awesome.min.css">
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 5.4.0"><link rel="alternate" href="/atom.xml" title="JevonYang的博客" type="application/atom+xml">
+</head>
+<body id="bodyx">
+    <div class="hd posts">
+    <a href="/index.html"><i class="fa fa-home
+ replay-btn" aria-hidden="true"></i></a>
+    <div class="post-title">
+        <p>
+            Git简明教程
+        </p>
+        <hr>
+    </div>
+    <div class="post-content">
+        <h2 id="一、Git的安装"><a href="#一、Git的安装" class="headerlink" title="一、Git的安装"></a>一、Git的安装</h2><h3 id="1-Windows下安装"><a href="#1-Windows下安装" class="headerlink" title="1. Windows下安装"></a>1. Windows下安装</h3><p>请于<a target="_blank" rel="noopener" href="https://git-scm.com/downloads">https://git-scm.com/downloads</a> 下载exe文件，安装即可。完成后，在命令行下输入命令：</p>
+<pre><code>git --version
+</code></pre>
+<p>出现git版本号，即为安装成功。</p>
+<p>若命令后出现错误，请检查环境变量，请加入git的环境变量，例如C:\Program Files\Git\cmd;。</p>
+<h3 id="2-类Unix环境下安装"><a href="#2-类Unix环境下安装" class="headerlink" title="2. 类Unix环境下安装"></a>2. 类Unix环境下安装</h3><p>在Linux/类Unix环境下，利用仓库安装较为快捷，并且大多数Linux仓库中有git源。</p>
+<p>例1、Debian/Ubuntu</p>
+<pre><code>apt-get install git
+</code></pre>
+<p>例2、Fedora</p>
+<pre><code>yum install git
+</code></pre>
+<p>更多请参见<a target="_blank" rel="noopener" href="https://git-scm.com/download/linux">https://git-scm.com/download/linux</a></p>
+<h2 id="二、Git的命令行操作"><a href="#二、Git的命令行操作" class="headerlink" title="二、Git的命令行操作"></a>二、Git的命令行操作</h2><h3 id="1-Git的本地配置"><a href="#1-Git的本地配置" class="headerlink" title="1.Git的本地配置"></a>1.Git的本地配置</h3><p>在安装后，还需配置用户的姓名及Email，配置命令如下：</p>
+<pre><code>git config --global user.name &quot;Your Name&quot;
+git config --global user.email &quot;email@example.com&quot;
+</code></pre>
+<p>这样就可以让git服务器识别自己的身份。在第一次操作远程仓库的时候，会提示</p>
+<pre><code>The authenticity of host &#39;github.com (xx.xx.xx.xx)&#39; can&#39;t be established.
+RSA key fingerprint is xx.xx.xx.xx.xx.
+Are you sure you want to continue connecting (yes/no)?
+</code></pre>
+<p>大意为，对方服务器是谁谁谁，是否连接。输入yes即可。</p>
+<h3 id="2-SSH免密登录"><a href="#2-SSH免密登录" class="headerlink" title="2.SSH免密登录"></a>2.SSH免密登录</h3><ul>
+<li><p>Windows在git bash中输入如下命令，然后一路回车。</p>
+<pre><code>  ssh-keygen -t rsa -C &quot;email@example.com&quot;
+</code></pre>
+</li>
+<li><p>在C:\Users\xxx(你的用户名).ssh下产生两个文件：id_rsa和id_rsa.pub，其中pub文件即为你的公钥，讲公钥提交到服务器，即可免密登录。</p>
+</li>
+</ul>
+<h3 id="3-克隆命令"><a href="#3-克隆命令" class="headerlink" title="3.克隆命令"></a>3.克隆命令</h3><p>从远程仓库克隆需要所需的源代码命令</p>
+<pre><code>git clone git@[ip或者域名]:[远程仓库路径]
+
+例如：git clone git@10.192.10.40:/usr/repositories/opp.git
+</code></pre>
+<h3 id="4-远程仓库配置"><a href="#4-远程仓库配置" class="headerlink" title="4.远程仓库配置"></a>4.远程仓库配置</h3><p>从远程仓库克隆下来源代码，我们不仅仅满足于此。与远程仓库相关的操作还很多，我们不能总是输入一大推链接，于是我们将仓库有个“别名”。</p>
+<pre><code>git remote add origin git@10.192.10.40:/usr/repositories/opp.git
+</code></pre>
+<p>其中origin即为所谓的别名，当我们需要更换远程仓库地址的时候，可以使用如下命令</p>
+<pre><code>git remote set-url origin git@github.com:JevonYang/example.git
+</code></pre>
+<h3 id="5-提交改动"><a href="#5-提交改动" class="headerlink" title="5.提交改动"></a>5.提交改动</h3><p>git作为分布式代码管理系统，代码的改变需要几个步骤，一般的来说，需要先改变本地的仓库的代码，再讲本地仓库的代码推送到远程仓库。</p>
+<p>改变本地仓库代码，首先需要添加改动文件，再进行提交：</p>
+<pre><code>git add filename 或者 git add . //添加改动文件
+git commit -m &quot;some comments&quot; //提交改动
+</code></pre>
+<p>另外，我们可以通过一下命令查看，状态及相应记录</p>
+<pre><code>git status//查看提交状态
+git log//查看提交记录
+</code></pre>
+<p>前者增加一个文件的改动，后者增加全部文件改动，注意后面的英文符号点不要忘记。在git commit命令之后，会出现确认文件选项，即删除改动文件前#号保存即为提交完成。</p>
+<h3 id="6-推送到远程仓库"><a href="#6-推送到远程仓库" class="headerlink" title="6.推送到远程仓库"></a>6.推送到远程仓库</h3><p>接下来，我们尝试将文件推送到远程仓库，使用如下命令：</p>
+<pre><code>git push [远程仓库] [分支名称]
+例如：git push -u origin master
+</code></pre>
+<p>如果刚刚没有改动文件的话，远程仓库是不会改变的。</p>
+<h3 id="7-分支操作"><a href="#7-分支操作" class="headerlink" title="7.分支操作"></a>7.分支操作</h3><p>在很多时候，我们需要用到分支操作，在分支操作上进行一些改动。</p>
+<pre><code>git checkout -b dev //建立并切换到分支上
+git push -u origin dev //将新建分支推送到远端
+
+git branch//查看分支
+</code></pre>
+<h3 id="8-合并分支"><a href="#8-合并分支" class="headerlink" title="8.合并分支"></a>8.合并分支</h3><p>在开发某功能后，需要将以开发的内容合并到主干上。</p>
+<pre><code>git checkout master //切换到主干
+git merge --no-ff dev //和Dev分支合并
+</code></pre>
+<h3 id="9-解决冲突"><a href="#9-解决冲突" class="headerlink" title="9.解决冲突"></a>9.解决冲突</h3><p>有操作就有冲突，git也为我们提供了良好的解决冲突方法。我们假设目前有两个分支master和dev，在master中曾经有过修复bug的改动，而dev中有增加新的feature改动，目前希望将两个分支合并，这样显然会出现冲突。</p>
+<pre><code>git merget --no-ff dev
+</code></pre>
+<p>Git用&lt;&lt;&lt;&lt;&lt;&lt;&lt;，=======，&gt;&gt;&gt;&gt;&gt;&gt;&gt;标记出不同分支的内容，当我们做出选择后，保存文件。</p>
+<pre><code>git add .
+git commit -m &quot;some comments&quot;
+git push -u origin master
+</code></pre>
+<p>在合并后，我们选择在此保存文件、提交文件，进而完成合并。</p>
+<h3 id="10-暂存功能"><a href="#10-暂存功能" class="headerlink" title="10.暂存功能"></a>10.暂存功能</h3><p>在dev开发某功能时，急需改动主干分支上的bug，于是我们需要将dev开发的内容暂存起来。</p>
+<pre><code>git stash//此时branch在dev上，把已开发内容进行暂存
+
+git checkout master//切换到主干分支，进行bug修复
+git checkout -b issuexx//创建分支，进行修复
+
+git checkout dev //切回开发分支
+git stash list //查看暂存功能列表
+git stash apply //从暂存区域恢复
+</code></pre>
+<h3 id="11-标签操作"><a href="#11-标签操作" class="headerlink" title="11.标签操作"></a>11.标签操作</h3><p>增删标签</p>
+<pre><code>git tag v1.0//为当前版本添加标签
+git tag -d v0.1 //删除标签
+</code></pre>
+<p>增加过往标签</p>
+<pre><code>git log --pretty=oneline --abbrev-commit//查看提交历史
+git tag v0.9 cc17032 //为commit id为cc17032的提交添加标签
+git tag -a v0.1 -m &quot;some comments&quot; cc17032 //添加标签、备注
+</code></pre>
+<p>查看标签</p>
+<pre><code>git tag//查看所有标签
+git show v1.0//查看标签信息
+</code></pre>
+<p>推送标签到远端</p>
+<pre><code>git push origin v1.0//推送某一标签
+git push origin --tags//推送全部标签
+</code></pre>
+<h2 id="三、MyEclipse-egit插件使用"><a href="#三、MyEclipse-egit插件使用" class="headerlink" title="三、MyEclipse egit插件使用"></a>三、MyEclipse egit插件使用</h2><p>git插件仅仅是git功能的延伸，下文以MyEclipse为例说明。</p>
+<h3 id="1-Git插件安装"><a href="#1-Git插件安装" class="headerlink" title="1.Git插件安装"></a>1.Git插件安装</h3><ul>
+<li><p>下载MyEcilpse Git插件例如：<a target="_blank" rel="noopener" href="http://download.csdn.net/detail/get_set/7688939">http://download.csdn.net/detail/get_set/7688939</a></p>
+</li>
+<li><p>在MyEcilpse安装目录dropins文件夹新建egit文件夹，<br>例如C:\Users\xxx(你的用户名)\AppData\Local\MyEclipse\MyEclipse 10\dropins\egit</p>
+</li>
+<li><p>放入解压后的文件，启动MyEclipse即可</p>
+</li>
+</ul>
+<h3 id="2-从远端导入项目"><a href="#2-从远端导入项目" class="headerlink" title="2.从远端导入项目"></a>2.从远端导入项目</h3><ul>
+<li>File-&gt;Import-&gt;Git-&gt;Projects from Git-&gt;URI-&gt;</li>
+<li>输入远程仓库URI，例如<a href="mailto:&#x67;&#105;&#x74;&#x40;&#49;&#x30;&#x2e;&#49;&#57;&#x32;&#46;&#x31;&#48;&#46;&#52;&#x30;">&#x67;&#105;&#x74;&#x40;&#49;&#x30;&#x2e;&#49;&#57;&#x32;&#46;&#x31;&#48;&#46;&#52;&#x30;</a>:/usr/repositories/opp.git</li>
+<li>IDE会自动填写host以及repository path</li>
+<li>Connection中填写通讯协议ssh，端口22</li>
+<li>Authentication中填写git服务器git账号及相应密码</li>
+</ul>
+<h2 id="四、Git服务器搭建"><a href="#四、Git服务器搭建" class="headerlink" title="四、Git服务器搭建"></a>四、Git服务器搭建</h2><h3 id="1-远端安装Git"><a href="#1-远端安装Git" class="headerlink" title="1.远端安装Git"></a>1.远端安装Git</h3><p>下文以CentOS举例说明</p>
+<ul>
+<li><p>远端利用yum源安装git，</p>
+<pre><code>  yum -y install git
+</code></pre>
+</li>
+<li><p>远端添加账户:</p>
+<pre><code>  groupadd git
+  useradd git -g git
+  passwd git  #参数是用户名
+</code></pre>
+</li>
+</ul>
+<h3 id="2-远端建立仓库"><a href="#2-远端建立仓库" class="headerlink" title="2.远端建立仓库"></a>2.远端建立仓库</h3><ul>
+<li><p>切换到git账户</p>
+<pre><code>  su - git 
+</code></pre>
+</li>
+<li><p>创建远程仓库，并会有相应提示，即为远程仓库的位置</p>
+<pre><code>  mkdir test.git
+  cd test.git
+  git init --bare //创建裸仓
+
+  Initialized existing Git repository in /home/repositories/test.git/
+</code></pre>
+</li>
+</ul>
+<h3 id="3-SSH免密码登录设置"><a href="#3-SSH免密码登录设置" class="headerlink" title="3.SSH免密码登录设置"></a>3.SSH免密码登录设置</h3><ul>
+<li><p>配置ssh功能，以及密钥文件位置</p>
+<p>  vim /etc/ssh/sshd_config</p>
+</li>
+<li><p>在该文件中，可以看到以下三项被#号注释，去掉#号，打开注释。</p>
+<pre><code>      #RSAAuthentication yes
+      #PubkeyAuthentication yes
+      #AuthorizedKeysFile .ssh/authorized_keys
+</code></pre>
+</li>
+<li><p>在git目录下创建.ssh/authorized_keys文件用于放置密钥，可以用以下命令也可以手动粘贴</p>
+<pre><code>  cat your_rsa_key.pub&gt;&gt;/home/git/.ssh/authorized_keys
+</code></pre>
+</li>
+</ul>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p>GIT官网<a target="_blank" rel="noopener" href="https://git-scm.com/">1</a></p>
+<p>Git教程-廖雪峰的官方网站<a target="_blank" rel="noopener" href="https://www.liaoxuefeng.com/wiki/0013739516305929606dd18361248578c67b8067c8c017b000">2</a></p>
+<p>GIT教程-易百教程<a target="_blank" rel="noopener" href="http://www.yiibai.com/git/">3</a></p>
+<p>CentOS7下git服务器端搭建<a target="_blank" rel="noopener" href="http://www.cnblogs.com/xuange306/articles/6800794.html">4</a></p>
+
+    </div>
+
+    
+</div>
+    <div class="footer" id="footer">
+    <p><h4>Copyright © 2020 | Author: JevonYang | Theme By <a class="theme-author" target="_blank" rel="noopener" href="https://github.com/Xunzhuo/hexo-theme-coder" style="font-size:14px; color: #969696">Coder</a></h4>
+    
+        <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+        <span id="busuanzi_container_site_pv">Page Views: <span id="busuanzi_value_site_pv"></span></span>
+        <span class="post-meta-divider">|</span>
+        <span id="busuanzi_container_site_uv">Unique Visitors: <span id="busuanzi_value_site_uv"></span></span>
+    
+    <label class="el-switch el-switch-blue el-switch-sm" style="vertical-align: sub;">
+        <input type="checkbox" name="switch" id="update_style">
+        <span class="el-switch-style"></span>
+    </label>
+
+    <!--         <script type="text/javascript">
+    var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");
+    document.write(unescape("%3Cspan id='cnzz_stat_icon_1278548644'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "v1.cnzz.com/stat.php%3Fid%3D1278548644%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));
+    </script> -->
+</p>
+</div>
+
+<input type="hidden" id="web_style" value="black">
+<input type="hidden" id="valine_appid" value="NOsswOncKgc8HOxqo9oxIWlX-gzGzoHsz">
+<input type="hidden" id="valine_appKey" value="z1FihjWEbS8uIfUQdmCtK7zz">
+
+<script src="/libs/jquery.min.js"></script>
+
+
+<script src="/libs/highlight/highlight.pack.js"></script>
+
+<script src='//cdn.jsdelivr.net/npm/valine@1.3.10/dist/Valine.min.js'></script>
+
+<script src="/js/js.js"></script>
+
+<style type="text/css">
+.v * {
+color: #698fca;
+}
+.v .vlist .vcard .vhead .vsys {
+color: #3a3e4a;
+}
+.v .vlist .vcard .vh .vmeta .vat {
+color: #638fd5;
+}
+.v .vlist .vcard .vhead .vnick {
+color: #6ba1ff;
+}
+.v a {
+color: #8696b1;
+}
+.v .vlist .vcard .vhead .vnick:hover {
+color: #669bfc;
+}
+</style>
+    <script type="text/javascript" color="173,174,173" opacity='1' zIndex="-2" count="99" src="//cdn.bootcss.com/canvas-nest.js/1.0.0/canvas-nest.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="renderer" content="webkit">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="google-site-verification" content="TZE0rZyIqLl10trYu3BWBWa1Vmz6HFwhb2OcNEK4u-s" />
+     <link rel="shortcut icon" href= /img/favicon.ico >
+    <title>
+        JevonYang的博客
+    </title>
+    <meta name="description" content= 欢迎访问！ >
+    <meta name="keywords" content= JevonYang >
+    
+<link rel="stylesheet" href="/libs/highlight/styles/monokai-sublime.css">
+
+    
+<link rel="stylesheet" href="/libs/font-awesome/css/font-awesome.min.css">
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 5.4.0"><link rel="alternate" href="/atom.xml" title="JevonYang的博客" type="application/atom+xml">
+</head>
+<body id="bodyx">
+    <div class="hd posts">
+    <a href="/index.html"><i class="fa fa-home
+ replay-btn" aria-hidden="true"></i></a>
+    <div class="post-title">
+        <p>
+            Spring Security原理介绍、源码解析——授权过程
+        </p>
+        <hr>
+    </div>
+    <div class="post-content">
+        <h3 id="流程简述"><a href="#流程简述" class="headerlink" title="流程简述"></a>流程简述</h3><p>当我们成功登录，获取<code>access_token</code>，即可使用该token来访问有权限的接口。如<a target="_blank" rel="noopener" href="https://my.oschina.net/yangzijing/blog/3023020" title="上文">上文</a>所讲，<code>JwtAuthenticationFilter</code>将<code>access_token</code>转化为系统可识别的<code>Authentication</code>放入安全上下文，<br>则来到最后一个过滤器<code>FilterSecurityInterceptor</code>,该过滤则是判断请求是否拥有权限。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FilterSecurityInterceptor</span> <span class="keyword">extends</span> <span class="title">AbstractSecurityInterceptor</span> <span class="keyword">implements</span> <span class="title">Filter</span> </span>&#123;</span><br><span class="line">  </span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doFilter</span><span class="params">(ServletRequest request, ServletResponse response, </span></span></span><br><span class="line"><span class="params"><span class="function">    FilterChain chain)</span> <span class="keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">	  FilterInvocation fi = <span class="keyword">new</span> FilterInvocation(request, response, chain);</span><br><span class="line">	  invoke(fi);</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">invoke</span><span class="params">(FilterInvocation fi)</span> <span class="keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ((fi.getRequest() != <span class="keyword">null</span>)</span><br><span class="line">	  &amp;&amp; (fi.getRequest().getAttribute(FILTER_APPLIED) != <span class="keyword">null</span>)</span><br><span class="line">	  &amp;&amp; observeOncePerRequest) &#123;</span><br><span class="line">	    <span class="comment">// filter already applied to this request and user wants us to observe</span></span><br><span class="line">		<span class="comment">// once-per-request handling, so don&#x27;t re-do security checking</span></span><br><span class="line">	  fi.getChain().doFilter(fi.getRequest(), fi.getResponse());</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">	  <span class="comment">// first time this request being called, so perform security checking</span></span><br><span class="line">	  <span class="keyword">if</span> (fi.getRequest() != <span class="keyword">null</span> &amp;&amp; observeOncePerRequest) &#123;</span><br><span class="line">	      fi.getRequest().setAttribute(FILTER_APPLIED, Boolean.TRUE);</span><br><span class="line">	  &#125;</span><br><span class="line">	  <span class="comment">// 请求之前的工作，也就是真正的权限认证的过程</span></span><br><span class="line">	  InterceptorStatusToken token = <span class="keyword">super</span>.beforeInvocation(fi);</span><br><span class="line">	  <span class="keyword">try</span> &#123;</span><br><span class="line">	    <span class="comment">// 请求真正的controller</span></span><br><span class="line">	    fi.getChain().doFilter(fi.getRequest(), fi.getResponse());</span><br><span class="line">	  &#125;</span><br><span class="line">	  <span class="keyword">finally</span> &#123;</span><br><span class="line">	    <span class="keyword">super</span>.finallyInvocation(token);</span><br><span class="line">	  &#125;</span><br><span class="line">	  <span class="comment">// 请求后的工作</span></span><br><span class="line">	  <span class="keyword">super</span>.afterInvocation(token, <span class="keyword">null</span>);</span><br><span class="line">	&#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>FilterSecurityInterceptor的主体方法依旧在doFilter中，而其中主要的方法为invoke()，大约分为三个步骤：</p>
+<ol>
+<li>beforeInvocation(fi);  验证Context中的Authentication和目标url所需权限是否匹配，匹配则通过，不通过则抛出异常。</li>
+<li>fi.getChain().doFilter(fi.getRequest(), fi.getResponse());  在此可以看做是，真正去访问目标Controller。</li>
+<li>afterInvocation(token, null); 获取请求后的操作。</li>
+</ol>
+<p>首先来看看beforeInvocation()</p>
+<h3 id="beforeInvocation"><a href="#beforeInvocation" class="headerlink" title="beforeInvocation"></a>beforeInvocation</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractSecurityInterceptor</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">protected</span> InterceptorStatusToken <span class="title">beforeInvocation</span><span class="params">(Object object)</span> </span>&#123;</span><br><span class="line">     <span class="comment">// 获取目标url的权限内容，这些内容可以从configuration中获取也可以用MetadataSource中获取</span></span><br><span class="line">     Collection&lt;ConfigAttribute&gt; attributes = <span class="keyword">this</span>.obtainSecurityMetadataSource().getAttributes(object);</span><br><span class="line">     <span class="comment">// ……省略</span></span><br><span class="line">    </span><br><span class="line">  	 Authentication authenticated = authenticateIfRequired();</span><br><span class="line">  </span><br><span class="line">  	 <span class="comment">// Attempt authorization</span></span><br><span class="line">  	 <span class="keyword">try</span> &#123;</span><br><span class="line">  	    <span class="comment">// AccessDecisionManager用于验证Authentication中的权限和目标url所需权限是否匹配，如果不匹配则抛出AccessDeniedException异常</span></span><br><span class="line">  	    <span class="keyword">this</span>.accessDecisionManager.decide(authenticated, object, attributes);</span><br><span class="line">  	 &#125;</span><br><span class="line">  	 <span class="keyword">catch</span> (AccessDeniedException accessDeniedException) &#123;</span><br><span class="line">  		publishEvent(<span class="keyword">new</span> AuthorizationFailureEvent(object, attributes, authenticated,</span><br><span class="line">  			accessDeniedException));</span><br><span class="line">    			<span class="keyword">throw</span> accessDeniedException;</span><br><span class="line">  	 &#125;</span><br><span class="line">  </span><br><span class="line">  	 <span class="comment">// Attempt to run as a different user</span></span><br><span class="line">  	 Authentication runAs = <span class="keyword">this</span>.runAsManager.buildRunAs(authenticated, object, attributes);</span><br><span class="line">  	 </span><br><span class="line">  	 <span class="comment">// 下一步则是生成InterceptorStatusToken，用于AfterInvocation步骤。有兴趣可以自己看</span></span><br><span class="line">  	 <span class="keyword">if</span> (runAs == <span class="keyword">null</span>) &#123;</span><br><span class="line">  	   <span class="comment">// no further work post-invocation</span></span><br><span class="line">  		<span class="keyword">return</span> <span class="keyword">new</span> InterceptorStatusToken(SecurityContextHolder.getContext(), <span class="keyword">false</span>, attributes, object);</span><br><span class="line">  	 &#125;</span><br><span class="line">  	 <span class="keyword">else</span> &#123;</span><br><span class="line">  		SecurityContext origCtx = SecurityContextHolder.getContext();</span><br><span class="line">  		SecurityContextHolder.setContext(SecurityContextHolder.createEmptyContext());</span><br><span class="line">  		SecurityContextHolder.getContext().setAuthentication(runAs);</span><br><span class="line">  		<span class="comment">// need to revert to token.Authenticated post-invocation</span></span><br><span class="line">  		<span class="keyword">return</span> <span class="keyword">new</span> InterceptorStatusToken(origCtx, <span class="keyword">true</span>, attributes, object);</span><br><span class="line">  	 &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>Collection&lt;ConfigAttribute&gt; attributes = this.obtainSecurityMetadataSource().getAttributes(object);</code>获取目标url所需要的权限，<br>该类实现<code>FilterInvocationSecurityMetadataSource</code>接口的方法。而配置url权限也可以从<code>WebSecurityConfig</code>中的configuration方法配置。</li>
+<li><code>this.accessDecisionManager.decide(authenticated, object, attributes);</code><br>判断<code>Authentication</code>中的权限目标url所需权限是否匹配，匹配则通过；不匹配则抛出<code>AccessDeniedException</code>异常。<br>该方法来自<code>AbstractAccessDecisionManager</code>的实现类，系统默认实现为<code>AffirmativeBased</code>。</li>
+<li><code>new InterceptorStatusToken(SecurityContextHolder.getContext(), false, attributes, object);</code><br>实现<code>InterceptorStatusToken</code>并返回，包括参数中的信息，如安全上下文、目标url所需权限、原始的访问请求。</li>
+</ol>
+<p>之后则访问目标Controller，获取真正的请求内容。</p>
+<h3 id="afterInvocation"><a href="#afterInvocation" class="headerlink" title="afterInvocation"></a>afterInvocation</h3><p>当我们启用了<code>@PreAuthorize()</code>、<code>@PostAuthorize()</code>注解的时候则会<code>AfterInvocationManger</code>,进而有以下验证逻辑。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractSecurityInterceptor</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">protected</span> Object <span class="title">afterInvocation</span><span class="params">(InterceptorStatusToken token, Object returnedObject)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (token == <span class="keyword">null</span>) &#123;</span><br><span class="line">  	  <span class="comment">// public object</span></span><br><span class="line">  	  <span class="keyword">return</span> returnedObject;</span><br><span class="line">  	&#125;</span><br><span class="line">  </span><br><span class="line">  	finallyInvocation(token); <span class="comment">// continue to clean in this method for passivity</span></span><br><span class="line">  </span><br><span class="line">  	<span class="keyword">if</span> (afterInvocationManager != <span class="keyword">null</span>) &#123;</span><br><span class="line">  	<span class="comment">// Attempt after invocation handling</span></span><br><span class="line">  	  <span class="keyword">try</span> &#123;</span><br><span class="line">  		returnedObject = afterInvocationManager.decide(token.getSecurityContext()</span><br><span class="line">  		  .getAuthentication(), token.getSecureObject(), token</span><br><span class="line">  		  .getAttributes(), returnedObject);</span><br><span class="line">  	  &#125;</span><br><span class="line">  	  <span class="keyword">catch</span> (AccessDeniedException accessDeniedException) &#123;</span><br><span class="line">  		AuthorizationFailureEvent event = <span class="keyword">new</span> AuthorizationFailureEvent(</span><br><span class="line">  		  token.getSecureObject(), token.getAttributes(), token</span><br><span class="line">  			.getSecurityContext().getAuthentication(),</span><br><span class="line">  		    	accessDeniedException);</span><br><span class="line">  		publishEvent(event);</span><br><span class="line">  		<span class="keyword">throw</span> accessDeniedException;</span><br><span class="line">  	  &#125;</span><br><span class="line">  	&#125;</span><br><span class="line">  	<span class="keyword">return</span> returnedObject;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>以下代码则是包含<code>AfterInvocationManager</code>具体的实现。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">GlobalMethodSecurityConfiguration</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">protected</span> AfterInvocationManager <span class="title">afterInvocationManager</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (prePostEnabled()) &#123;</span><br><span class="line">  	  AfterInvocationProviderManager invocationProviderManager = <span class="keyword">new</span> AfterInvocationProviderManager();</span><br><span class="line">  		ExpressionBasedPostInvocationAdvice postAdvice = <span class="keyword">new</span> ExpressionBasedPostInvocationAdvice(</span><br><span class="line">  	    	getExpressionHandler());</span><br><span class="line">  		PostInvocationAdviceProvider postInvocationAdviceProvider = <span class="keyword">new</span> PostInvocationAdviceProvider(</span><br><span class="line">  			postAdvice);</span><br><span class="line">  		List&lt;AfterInvocationProvider&gt; afterInvocationProviders = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">  		afterInvocationProviders.add(postInvocationAdviceProvider);</span><br><span class="line">  		invocationProviderManager.setProviders(afterInvocationProviders);</span><br><span class="line">  		<span class="keyword">return</span> invocationProviderManager;</span><br><span class="line">  	  &#125;</span><br><span class="line">  	<span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="我们可以做些什么？"><a href="#我们可以做些什么？" class="headerlink" title="我们可以做些什么？"></a>我们可以做些什么？</h3><ol>
+<li><p>实现<code>FilterInvocationSecurityMetadataSource</code>，用于启动时加载url所需的权限，这样就不用在configuration或者注解中将目标url权限‘写死’。<br>可以参照本例所写的实现<code>MyFilterInvocationSecurityMetadataSource</code>。</p>
+</li>
+<li><p>重载<code>AbstractAccessDecisionManager</code>，根据业务需要重写，请求目标权限和Authentication中权限的验证过程.<br>举个例子，Spring Security中默认的RBAC，即，权限认证都是根据角色判断，固定角色只能访问固定接口。<br>现在我们需要ACL权限模型，用户A权限为1，用户B权限为5，用户C权限为9，接口a需要权限6，则用户C可以访问，<br>而用户A、B不能访问，就是说权限大的可以访问权限小的接口，如果需要改变权限模型则重载该类即可。</p>
+</li>
+</ol>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>授权过程主要有哪些？</p>
+<ol>
+<li>获取请求目标所需权限，从<code>FilterInvocationSecurityMetadataSource</code>接口的实现类获取。</li>
+<li>对比安全上下文中<code>Authentication</code>中的权限是否匹配，在<code>AbstractAccessDecisionManager</code>的实现类中比较。</li>
+</ol>
+<h2 id="链接"><a href="#链接" class="headerlink" title="链接"></a>链接</h2><p>文章涉及到代码已传到gitee上，供大家参考： <a target="_blank" rel="noopener" href="https://gitee.com/yangzijing/spring-security-demo">https://gitee.com/yangzijing/spring-security-demo</a></p>
+<p>Spring Security源码庞大且复杂，本人水平有限，文章难免有错漏、表述不清之处，请大家支出。欢迎交流，希望和大家共同进步。</p>
+
+    </div>
+
+    
+</div>
+    <div class="footer" id="footer">
+    <p><h4>Copyright © 2020 | Author: JevonYang | Theme By <a class="theme-author" target="_blank" rel="noopener" href="https://github.com/Xunzhuo/hexo-theme-coder" style="font-size:14px; color: #969696">Coder</a></h4>
+    
+        <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+        <span id="busuanzi_container_site_pv">Page Views: <span id="busuanzi_value_site_pv"></span></span>
+        <span class="post-meta-divider">|</span>
+        <span id="busuanzi_container_site_uv">Unique Visitors: <span id="busuanzi_value_site_uv"></span></span>
+    
+    <label class="el-switch el-switch-blue el-switch-sm" style="vertical-align: sub;">
+        <input type="checkbox" name="switch" id="update_style">
+        <span class="el-switch-style"></span>
+    </label>
+
+    <!--         <script type="text/javascript">
+    var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");
+    document.write(unescape("%3Cspan id='cnzz_stat_icon_1278548644'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "v1.cnzz.com/stat.php%3Fid%3D1278548644%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));
+    </script> -->
+</p>
+</div>
+
+<input type="hidden" id="web_style" value="black">
+<input type="hidden" id="valine_appid" value="NOsswOncKgc8HOxqo9oxIWlX-gzGzoHsz">
+<input type="hidden" id="valine_appKey" value="z1FihjWEbS8uIfUQdmCtK7zz">
+
+<script src="/libs/jquery.min.js"></script>
+
+
+<script src="/libs/highlight/highlight.pack.js"></script>
+
+<script src='//cdn.jsdelivr.net/npm/valine@1.3.10/dist/Valine.min.js'></script>
+
+<script src="/js/js.js"></script>
+
+<style type="text/css">
+.v * {
+color: #698fca;
+}
+.v .vlist .vcard .vhead .vsys {
+color: #3a3e4a;
+}
+.v .vlist .vcard .vh .vmeta .vat {
+color: #638fd5;
+}
+.v .vlist .vcard .vhead .vnick {
+color: #6ba1ff;
+}
+.v a {
+color: #8696b1;
+}
+.v .vlist .vcard .vhead .vnick:hover {
+color: #669bfc;
+}
+</style>
+    <script type="text/javascript" color="173,174,173" opacity='1' zIndex="-2" count="99" src="//cdn.bootcss.com/canvas-nest.js/1.0.0/canvas-nest.min.js"></script>
+</body>
+</html>
